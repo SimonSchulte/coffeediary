@@ -7,21 +7,27 @@ import {MatCardModule} from '@angular/material/card';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 import {ActivatedRoute} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
+import {SnackBarService} from '../services/snack-bar.service';
+import {MatIconButton} from '@angular/material/button';
 
 @Component({
   selector: 'app-extraction-overview',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton],
   template: `
     <mat-card>
       <h2>Bezüge Übersicht</h2>
+      <h4>Das Verhältnis
+        <mat-icon>double_arrow</mat-icon>
+        wird automatisch berechnet
+      </h4>
       <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
         <!-- Datum Column -->
         <ng-container matColumnDef="created_at">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>
             <mat-icon>calendar_today</mat-icon>
           </th>
-          <td mat-cell *matCellDef="let element">{{ element.created_at | date:'dd.MM.yy'  }}</td>
+          <td mat-cell *matCellDef="let element">{{ element.created_at | date:'dd.MM.yy' }}</td>
         </ng-container>
         <!-- Mahlgrad Column -->
         <ng-container matColumnDef="grinder_setting">
@@ -49,7 +55,8 @@ import {MatIconModule} from '@angular/material/icon';
           <th mat-header-cell *matHeaderCellDef>
             <mat-icon>double_arrow</mat-icon>
           </th>
-          <td mat-cell *matCellDef="let element">{{ element.ratio || '1:2' }}</td>
+          <td mat-cell *matCellDef="let element"> 1:{{ (element.output / element.gramms) | number:'1.2-2' }}</td>
+          >
         </ng-container>
         <!-- Output Column -->
         <ng-container matColumnDef="output">
@@ -58,6 +65,18 @@ import {MatIconModule} from '@angular/material/icon';
           </th>
           <td mat-cell *matCellDef="let element">{{ element.output }}g</td>
         </ng-container>
+        <!-- Publish Column -->
+        <ng-container matColumnDef="publish">
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-icon>publish</mat-icon>
+          </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="primary" (click)="publishExtraction(element)">
+              <mat-icon>publish</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
@@ -106,13 +125,14 @@ import {MatIconModule} from '@angular/material/icon';
   ]
 })
 export class ExtractionOverviewComponent implements OnInit {
-  displayedColumns: string[] = ['created_at', 'grinder_setting', 'gramms', 'runtime', 'ratio', 'output'];
+  displayedColumns: string[] = ['created_at', 'grinder_setting', 'gramms', 'runtime', 'ratio', 'output', 'publish'];
   dataSource = new MatTableDataSource<any>([]);
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private espressos: SupabaseEspressosService,
               private route: ActivatedRoute,
-              private cdr: ChangeDetectorRef) {
+              private cdr: ChangeDetectorRef,
+              private snackBar: SnackBarService) {
   }
 
   async ngOnInit() {
@@ -123,6 +143,21 @@ export class ExtractionOverviewComponent implements OnInit {
       this.dataSource.sort = this.sort;
       this.cdr.detectChanges();
     });
+  }
 
+  async publishExtraction(element: any): Promise<void> {
+    try {
+      await this.espressos.updateDefaultReceipt(element.espresso_id, {
+        gramms: element.gramms,
+        ratio: (element.output / element.gramms),
+        grinder_setting: element.grinder_setting,
+        runtime: element.runtime
+      }).then(value => {
+
+        this.snackBar.open('Espresso erfolgreich aktualisiert!');
+      });
+    } catch (err) {
+      this.snackBar.open('Fehler beim Aktualisieren des Espressos!');
+    }
   }
 }

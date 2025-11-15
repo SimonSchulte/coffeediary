@@ -45,8 +45,8 @@ import { Router } from '@angular/router';
                       {icon: 'settings', desc: 'Mahlgrad', value: e.grinder_setting},
                       {icon: 'scale', desc: 'Bohnen', value: e.gramms + 'g'},
                       {icon: 'timer', desc: 'Bezug', value: e.runtime + 's'},
-                      {icon: 'double_arrow', desc: 'Verhältnis', value: '1:'+ e.ratio },
-                      {icon: 'output', desc: 'Output', value: (e.gramms * e.ratio) + 'g'}
+                      {icon: 'double_arrow', desc: 'Verhältnis', value: '1:' + (typeof e.ratio === 'number' ? e.ratio.toFixed(1) : e.ratio)},
+                      {icon: 'output', desc: 'Output', value: (typeof e.gramms === 'number' && typeof e.ratio === 'number' ? (e.gramms * e.ratio).toFixed(0) : (e.gramms * e.ratio)) + 'g'}
                     ]" class="mat-elevation-z0 espresso-table">
                   <!-- Icon Column -->
                   <ng-container matColumnDef="icon">
@@ -69,7 +69,6 @@ import { Router } from '@angular/router';
                   <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
                 </table>
 
-                <
                 <button mat-flat-button color="primary" class="extraction-div" (click)="openExtractionDialog(e)">Bezug erfassen</button>
                 <button mat-stroked-button color="accent" class="extraction-div" (click)="goToExtractions(e)"> {{e.espresso_pulls?.length || 0}} Bezüge</button>
               </div>
