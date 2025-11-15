@@ -1,59 +1,24 @@
 # Coffeediary
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.10.
+Welcome to Coffeediary!
 
-## Development server
+This app is my very own, personal solution to a small but important problem: keeping track of the best espresso recipes for all the specialty coffees I love to try. Sure, I could have used a regular notebook—but as a software developer, what else do you do on a Saturday afternoon but build an app? And having an amazing espresso.
 
-To start a local development server, run:
+But damn, what was the correct grindsize for the brazilian 60/40 from my local bean-dealer?!
 
-```bash
-ng serve
-```
+## What does Coffeediary do?
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Coffeediary is my digital coffee journal. It helps me record, organize, and revisit every espresso recipe and extraction. Whenever I switch beans or experiment with a new recipe, I can log all the details—grind size, ratio, amount, extraction time—so I never lose track of what works best for each coffee.
 
-## Code scaffolding
+## Why Coffeediary?
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+With so many amazing coffees out there, it’s easy to forget the perfect recipe for each one. Coffeediary is my way of making sure I always have my personal coffee journey at hand, ready to recreate the best cup every time.
 
-```bash
-ng generate component component-name
-```
+If you’re a coffee lover and a bit of a nerd like me, I hope Coffeediary helps you enjoy your brews and experiments just as much as I do!
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+If you want to try it out, shoot me an email, I might add you to the users. 
+Currently this app is quite heavily bound to supabase and its api, as I put focus on functionality and to have the app up for the next coffee!
 
-```bash
-ng generate --help
-```
 
-## Building
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Enjoy your coffee adventures!
