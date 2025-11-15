@@ -3,7 +3,7 @@ import {RouterOutlet} from '@angular/router';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {SupabaseAuthService} from './services/supabase-auth.service';
 import {MatButton} from '@angular/material/button';
-import {AppToolbar} from './ui/app-toolbar.component';
+import AppToolbar from './ui/app-toolbar.component';
 import {AppFooter} from './ui/app-footer.component';
 
 @Component({

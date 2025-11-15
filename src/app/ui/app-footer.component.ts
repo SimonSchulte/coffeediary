@@ -17,6 +17,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
         font-size: 0.95rem;
         padding: 0 8px;
       }
+
       @media (max-width: 600px) {
         .footer {
           min-height: 40px;
