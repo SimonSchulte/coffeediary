@@ -3,18 +3,20 @@ import {CommonModule} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatIconModule} from '@angular/material/icon';
+import {MatExpansionModule} from '@angular/material/expansion';
+import {MatTableModule} from '@angular/material/table';
 
-import {SupabaseEspressos} from '../backend/supabase.espressos';
 import {
   MatDialog
 } from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import NewEspressoDialog from './new-esspresso-dialog/new-espresso-dialog.component';
+import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 
 @Component({
   selector: 'app-espressos',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule],
   template: `
     <section style="padding: 16px;">
       <h2>Espressos</h2>
@@ -27,31 +29,56 @@ import NewEspressoDialog from './new-esspresso-dialog/new-espresso-dialog.compon
           </div>
         </div>
       } @else {
+        @for (e of espressosList; track e.id) {
+          <mat-accordion class="espresso-accordion">
+            <mat-expansion-panel class="espresso" (opened)="onPanelOpened(e.id)" (closed)="onPanelClosed(e.id)">
+              <mat-expansion-panel-header>
+                <mat-panel-title>{{ e.name }}</mat-panel-title>
+                <mat-panel-description>
+                  {{ e.vendor }}
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+              <div class="espresso-details">
+                <table mat-table [dataSource]="[
+                      {icon: 'settings', desc: 'Mahlgrad', value: e.grinder_setting},
+                      {icon: 'scale', desc: 'Bohnen', value: e.gramms + 'g'},
+                      {icon: 'timer', desc: 'Bezug', value: e.runtime + 's'},
+                      {icon: 'double_arrow', desc: 'Verhältnis', value: '1:'+ e.ratio },
+                      {icon: 'output', desc: 'Output', value: (e.gramms * e.ratio) + 'g'}
+                    ]" class="mat-elevation-z0 espresso-table">
+                  <!-- Icon Column -->
+                  <ng-container matColumnDef="icon">
+                    <td mat-cell *matCellDef="let element">
+                      <mat-icon class="espresso-icon">{{ element.icon }}</mat-icon>
+                    </td>
+                  </ng-container>
+                  <!-- Description Column (empty for now) -->
+                  <ng-container matColumnDef="desc">
+                    <td mat-cell *matCellDef="let element">
+                      {{ element.desc }}
+                    </td>
+                  </ng-container>
+                  <!-- Value Column -->
+                  <ng-container matColumnDef="value">
+                    <td mat-cell *matCellDef="let element">
+                      <span class="espresso-value">{{ element.value }}</span>
+                    </td>
+                  </ng-container>
+                  <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
+                </table>
+              </div>
+
+
+
+            </mat-expansion-panel>
+          </mat-accordion>
+        }
         <div class="grid">
-          @for (e of espressosList; track e.id) {
-            <mat-card class="espresso-card">
-              <mat-card-title>{{ e.name || 'Unnamed' }}</mat-card-title>
-              <mat-card-subtitle>von {{ e.vendor || "" }}</mat-card-subtitle>
-              <mat-card-content>
-                <div class="espresso-row">
-                  Rezept:
-                </div>
-                <div class="espresso-row">
-                  <mat-icon class="espresso-icon">scale</mat-icon>
-                  <span class="espresso-value">{{ e.gramms }}g</span>
-                  <mat-icon class="espresso-icon">timer</mat-icon>
-                  <span class="espresso-value">{{ e.runtime }}s</span>
-                  <mat-icon class="espresso-icon">output</mat-icon>
-                  <span class="espresso-value">{{ e.gramms * e.ratio }}g</span>
-                </div>
-              </mat-card-content>
-            </mat-card>
-          }
-          <mat-card class="espresso-card" (click)="createNewCoffee()">
-            <mat-card-title>Neuer Espresso</mat-card-title>
+          <mat-card class="espresso-card new-espresso-card" (click)="createNewCoffee()">
+            <mat-card-title class="new-espresso-title">Neuer Espresso</mat-card-title>
             <mat-card-content>
-              <div class="new-espresso">
-                <mat-icon class="new-icon">add2</mat-icon>
+              <div class="new-espresso-content">
+                <mat-icon class="new-icon">add</mat-icon>
               </div>
             </mat-card-content>
           </mat-card>
@@ -65,6 +92,61 @@ import NewEspressoDialog from './new-esspresso-dialog/new-espresso-dialog.compon
   `,
   styles: [
     `
+      .espresso-accordion {
+        width: 100%;
+      }
+
+      .espresso{
+        margin-bottom: 4px;
+      }
+
+      .mat-expansion-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .espresso-card {
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        width: 100%;
+      }
+      .espresso-header {
+        padding-left: 16px;
+        margin-bottom: 0;
+      }
+      .espresso-subheader {
+        padding-left: 16px;
+        margin-bottom: 8px;
+      }
+      .espresso-inner-accordion {
+        width: 98%;
+        box-shadow: none;
+        background: transparent;
+        margin: 8px 0px 4px 4px;
+      }
+      .espresso-accordion-header {
+        width: 100%;
+        padding-left: 16px;
+      }
+      .espresso-row {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        margin-bottom: 8px;
+        margin-top: 8px;
+      }
+      .espresso-value {
+        min-width: 32px;
+        font-size: 1.05em;
+        font-weight: 500;
+        margin-right: 8px;
+      }
+      .espresso-details {
+        padding: 16px;
+        background: #f7f7f7;
+        border-radius: 4px;
+      }
+
       .grid {
         display: flex;
         flex-wrap: wrap;
@@ -73,48 +155,44 @@ import NewEspressoDialog from './new-esspresso-dialog/new-espresso-dialog.compon
         justify-content: center;
       }
 
-      .espresso-card {
-        flex: 1 1 calc(100% - 12px);
-        min-width: 220px;
-        max-width: 400px;
-        min-height: 120px;
-        box-sizing: border-box;
-        margin: 0 auto;
-      }
-
-      .mat-card-title {
-        margin-bottom: 4px;
-        margin-top: 8px;
-      }
-
-      .mat-card-subtitle {
-        margin-bottom: 15px;
-        margin-left: 2px;
-      }
-
-      .espresso-row {
+      .espresso-card.new-espresso-card {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 3px;
-        margin-bottom: 8px;
-        margin-top: 8px;
+        justify-content: center;
+        cursor: pointer;
+        transition: box-shadow 0.2s, transform 0.2s;
+        border: 2px dashed #bdbdbd;
+        background: #f7f7f7;
       }
-
-      .espresso-icon {
-        font-size: 20px;
-        vertical-align: middle;
-        color: var(--mat-sys-on-surface, #666);
+      .new-espresso-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: scale(1.03);
+        border-color: #1976d2;
+        background: #e3f2fd;
       }
-
-      .espresso-value {
-        min-width: 32px;
-        font-size: 1.05em;
-        font-weight: 500;
-        margin-right: 8px;
+      .new-espresso-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
       }
-
       .new-icon {
-        vertical-align: center;
+        font-size: 56px;
+        color: #1976d2;
+        margin-bottom: 8px;
+        transition: color 0.2s;
+        display: block;
+      }
+      .new-espresso-title {
+        text-align: center;
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-bottom: 0;
+        margin-top: 12px;
+        color: #1976d2;
       }
 
       @media (min-width: 600px) {
@@ -154,6 +232,7 @@ export class EspressosComponent implements OnInit {
   espressosList: any[] = [];
   loading = true;
   readonly dialog = inject(MatDialog);
+  expanded: { [id: number]: boolean } = {};
 
  async createNewCoffee(): Promise<void> {
     this.dialog.open(NewEspressoDialog, {
@@ -164,7 +243,7 @@ export class EspressosComponent implements OnInit {
   }
 
 
-  constructor(private backend: SupabaseEspressos, private cdr: ChangeDetectorRef) {
+  constructor(private espressos: SupabaseEspressosService, private cdr: ChangeDetectorRef) {
   }
 
   async ngOnInit(): Promise<void> {
@@ -174,7 +253,7 @@ export class EspressosComponent implements OnInit {
   async extractEspressos(): Promise<void> {
     try {
       this.loading = true;
-      const rows = await this.backend.getEspressos();
+      const rows = await this.espressos.getAll();
       this.espressosList = rows ?? [];
 
       console.log(this.espressosList);
@@ -185,5 +264,13 @@ export class EspressosComponent implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     }
+  }
+
+  onPanelOpened(id: number) {
+    this.expanded[id] = true;
+  }
+
+  onPanelClosed(id: number) {
+    this.expanded[id] = false;
   }
 }

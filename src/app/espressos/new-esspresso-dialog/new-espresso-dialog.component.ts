@@ -6,14 +6,24 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {SupabaseEspressos} from '../../backend/supabase.espressos';
+import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {SupabaseEspressosService} from '../../backend/supabase.espressos.service';
 
 @Component({
   selector: 'app-new-espresso-dialog',
   imports: [
-    MatFormFieldModule, MatInputModule, MatSelectModule, MatDialogTitle, MatDialogContent, MatDialogActions, MatButton, MatDialogClose, MatIconModule, FormsModule, ReactiveFormsModule
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatDialogTitle,
+    MatDialogContent,
+    MatDialogActions,
+    MatButton,
+    MatDialogClose,
+    MatIconModule,
+    FormsModule,
+    ReactiveFormsModule
   ],
   template: `
     <h2 mat-dialog-title>Neuer Yummi ☕</h2>
@@ -55,7 +65,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
       <mat-form-field class="new-espresso-formfield" floatLabel="always">
         <input matInput type="number" required [defaultValue]="2" [(ngModel)]="espresso_ratio">
         <mat-label>
-          <mat-icon></mat-icon>
+          <mat-icon>linear_scale</mat-icon>
           Ratio
         </mat-label>
       </mat-form-field>
@@ -74,6 +84,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
       }
     `
   ],
+  standalone: true
 })
 class NewEspressoDialog {
   protected espresso_name: any;
@@ -83,11 +94,11 @@ class NewEspressoDialog {
   protected espresso_grinder_setting: any;
   protected espresso_vendor: any;
 
-  constructor(protected supabaseEspressos: SupabaseEspressos, protected snackBar: MatSnackBar) {
+  constructor(protected supabaseEspressos: SupabaseEspressosService, protected snackBar: MatSnackBar) {
   }
 
   protected addEspresso() {
-    this.supabaseEspressos.addEspresso({
+    this.supabaseEspressos.create({
         name: this.espresso_name,
         vendor: this.espresso_vendor,
         grinder_setting: this.espresso_grinder_setting,

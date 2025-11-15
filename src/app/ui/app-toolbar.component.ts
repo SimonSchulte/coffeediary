@@ -15,11 +15,8 @@ import { SnackBarService } from '../services/snack-bar.service';
     <mat-toolbar color="primary" class="toolbar">
       <span class="toolbar-title">Coffee Diary</span>
       <span class="toolbar-spacer"></span>
-      <a mat-button routerLink="/">Home</a>
-      <a mat-button routerLink="/espressos">Espressos</a>
-      <button mat-icon-button (click)="showSample()" aria-label="Show message">
-        <mat-icon>notifications</mat-icon>
-      </button>
+      <a mat-button routerLink="/espressos">Espresso</a>
+      <a mat-button routerLink="/purover">Pourover</a>
     </mat-toolbar>
   `,
   styles: [
