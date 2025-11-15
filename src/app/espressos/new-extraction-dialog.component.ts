@@ -1,0 +1,57 @@
+import {Component, Input} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {MatDialogActions, MatDialogContent, MatDialogRef} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatInputModule} from '@angular/material/input';
+
+@Component({
+  selector: 'app-new-extraction-dialog',
+  standalone: true,
+  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogContent, MatDialogActions],
+  template: `
+    <h2 mat-dialog-title>Bezug erfassen - Wie lief's?</h2>
+    <mat-dialog-content>
+      <form #extractionForm="ngForm" (ngSubmit)="onSubmit()">
+        <mat-form-field class="espresso-formfield" appearance="fill">
+          <mat-label>Bezug (Sekunden)</mat-label>
+          <input matInput type="number" name="runtime" [(ngModel)]="runtime" required>
+        </mat-form-field>
+        <mat-form-field class="espresso-formfield" appearance="fill">
+          <mat-label>Output (g)</mat-label>
+          <input matInput type="number" name="output" [(ngModel)]="output" required>
+        </mat-form-field>
+        <mat-form-field class="espresso-formfield" appearance="fill">
+          <mat-label>Mahlgrad</mat-label>
+          <input matInput type="text" name="grinder_setting" [(ngModel)]="grinder_setting" required>
+        </mat-form-field>
+
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions>
+      <button mat-button type="button" (click)="onCancel()">Abbrechen</button>
+      <button mat-flat-button color="primary" type="submit" [disabled]="!extractionForm.form.valid">Speichern
+      </button>
+    </mat-dialog-actions>
+
+  `
+})
+export default class NewExtractionDialogComponent {
+  @Input() grinder_setting: string = '';
+  runtime: number | null = null;
+  output: number | null = null;
+
+  constructor(private dialogRef: MatDialogRef<NewExtractionDialogComponent>) {
+  }
+
+  onCancel() {
+    this.dialogRef.close();
+  }
+
+  onSubmit() {
+    if (this.runtime && this.output && this.grinder_setting) {
+      this.dialogRef.close({runtime: this.runtime, output: this.output, grinder_setting: this.grinder_setting});
+    }
+  }
+}
+

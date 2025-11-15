@@ -10,7 +10,8 @@ import {
   MatDialog
 } from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
-import NewEspressoDialog from './new-esspresso-dialog/new-espresso-dialog.component';
+import NewEspressoDialog from './new-espresso-dialog.component';
+import NewExtractionDialogComponent from './new-extraction-dialog.component';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 
 @Component({
@@ -66,9 +67,13 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
                   </ng-container>
                   <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
                 </table>
+
+                <div class="known-extraction-div">
+                  Bisher sind {{e.espresso_pulls?.length || 0}} Bezüg(e) bekannt
+                </div>
+
+                <button mat-flat-button color="primary" class="extraction-div" (click)="openExtractionDialog(e)">Bezug erfassen</button>
               </div>
-
-
 
             </mat-expansion-panel>
           </mat-accordion>
@@ -96,7 +101,7 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         width: 100%;
       }
 
-      .espresso{
+      .espresso {
         margin-bottom: 4px;
       }
 
@@ -105,29 +110,35 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         align-items: center;
         gap: 12px;
       }
+
       .espresso-card {
         margin-bottom: 16px;
         padding-bottom: 8px;
         width: 100%;
       }
+
       .espresso-header {
         padding-left: 16px;
         margin-bottom: 0;
       }
+
       .espresso-subheader {
         padding-left: 16px;
         margin-bottom: 8px;
       }
+
       .espresso-inner-accordion {
         width: 98%;
         box-shadow: none;
         background: transparent;
         margin: 8px 0px 4px 4px;
       }
+
       .espresso-accordion-header {
         width: 100%;
         padding-left: 16px;
       }
+
       .espresso-row {
         display: flex;
         align-items: center;
@@ -135,12 +146,14 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         margin-bottom: 8px;
         margin-top: 8px;
       }
+
       .espresso-value {
         min-width: 32px;
         font-size: 1.05em;
         font-weight: 500;
         margin-right: 8px;
       }
+
       .espresso-details {
         padding: 16px;
         background: #f7f7f7;
@@ -165,12 +178,14 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         border: 2px dashed #bdbdbd;
         background: #f7f7f7;
       }
+
       .new-espresso-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         transform: scale(1.03);
         border-color: #1976d2;
         background: #e3f2fd;
       }
+
       .new-espresso-content {
         display: flex;
         flex-direction: column;
@@ -179,6 +194,7 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         width: 100%;
         height: 100%;
       }
+
       .new-icon {
         font-size: 56px;
         color: #1976d2;
@@ -186,6 +202,7 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         transition: color 0.2s;
         display: block;
       }
+
       .new-espresso-title {
         text-align: center;
         font-weight: 600;
@@ -211,7 +228,7 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
         padding: 8px;
       }
 
-      new-espresso{
+      new-espresso {
         align-content: center;
       }
 
@@ -225,6 +242,17 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
           max-width: 100vw;
         }
       }
+
+      .known-extraction-div {
+        align-items: center;
+      }
+
+
+      .extraction-div {
+        margin-top: 16px;
+        width: 100%;
+        display: block;
+      }
     `
   ]
 })
@@ -236,7 +264,6 @@ export class EspressosComponent implements OnInit {
 
  async createNewCoffee(): Promise<void> {
     this.dialog.open(NewEspressoDialog, {
-      width: '250px',
     }).afterClosed().subscribe( async () => {
       await this.extractEspressos();
     });
@@ -272,5 +299,11 @@ export class EspressosComponent implements OnInit {
 
   onPanelClosed(id: number) {
     this.expanded[id] = false;
+  }
+
+  openExtractionDialog(e: any) {
+    this.dialog.open(NewExtractionDialogComponent, {
+      data: { grinder_setting: e.grinder_setting },
+    });
   }
 }

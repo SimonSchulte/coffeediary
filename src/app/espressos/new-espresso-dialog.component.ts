@@ -8,7 +8,8 @@ import {MatButton} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {SupabaseEspressosService} from '../../backend/supabase.espressos.service';
+import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {MatExpansionModule} from '@angular/material/expansion';
 
 @Component({
   selector: 'app-new-espresso-dialog',
@@ -23,52 +24,57 @@ import {SupabaseEspressosService} from '../../backend/supabase.espressos.service
     MatDialogClose,
     MatIconModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatExpansionModule
   ],
   template: `
     <h2 mat-dialog-title>Neuer Yummi ☕</h2>
     <mat-dialog-content>
-      <mat-form-field class="new-espresso-formfield">
+      <mat-form-field class="espresso-formfield">
         <mat-label>Name</mat-label>
         <input matInput required [(ngModel)]="espresso_name">
       </mat-form-field>
 
-      <mat-form-field class="new-espresso-formfield">
+      <mat-form-field class="espresso-formfield">
         <mat-label>Röster</mat-label>
         <input matInput required [(ngModel)]="espresso_vendor">
       </mat-form-field>
 
-      <h3 mat-dialog-content>Rezept</h3>
+      <mat-accordion class="receipe-accordion">
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>Rezeptdetails</mat-panel-title>
+          </mat-expansion-panel-header>
+          <mat-form-field class="espresso-formfield">
+            <mat-label>Mahlgrad</mat-label>
+            <input matInput type="number" required [(ngModel)]="espresso_grinder_setting">
+          </mat-form-field>
 
-      <mat-form-field class="new-espresso-formfield">
-        <mat-label>Mahlgrad</mat-label>
-        <input matInput type="number" required [(ngModel)]="espresso_grinder_setting">
-      </mat-form-field>
+          <mat-form-field class="espresso-formfield">
+            <mat-label>
+              <mat-icon>timer</mat-icon>
+              Zeit
+            </mat-label>
+            <input matInput type="number" required [defaultValue]="25" [(ngModel)]="espresso_timer">
+          </mat-form-field>
 
-      <mat-form-field class="new-espresso-formfield">
-        <mat-label>
-          <mat-icon>timer</mat-icon>
-          Zeit
-        </mat-label>
-        <input matInput type="number" required [defaultValue]="25" [(ngModel)]="espresso_timer">
-      </mat-form-field>
+          <mat-form-field class="espresso-formfield" floatLabel="always">
+            <mat-label>
+              <mat-icon>scale</mat-icon>
+              Gramm
+            </mat-label>
+            <input matInput type="number" required [defaultValue]="18" [(ngModel)]="espresso_gramms">
+          </mat-form-field>
 
-      <mat-form-field class="new-espresso-formfield" floatLabel="always">
-        <mat-label>
-          <mat-icon>scale</mat-icon>
-          Gramm
-        </mat-label>
-        <input matInput type="number" required [defaultValue]="18" [(ngModel)]="espresso_gramms">
-      </mat-form-field>
-
-
-      <mat-form-field class="new-espresso-formfield" floatLabel="always">
-        <input matInput type="number" required [defaultValue]="2" [(ngModel)]="espresso_ratio">
-        <mat-label>
-          <mat-icon>linear_scale</mat-icon>
-          Ratio
-        </mat-label>
-      </mat-form-field>
+          <mat-form-field class="espresso-formfield" floatLabel="always">
+            <input matInput type="number" required [defaultValue]="2" [(ngModel)]="espresso_ratio">
+            <mat-label>
+              <mat-icon>linear_scale</mat-icon>
+              Ratio
+            </mat-label>
+          </mat-form-field>
+        </mat-expansion-panel>
+      </mat-accordion>
     </mat-dialog-content>
 
     <mat-dialog-actions>
@@ -79,8 +85,8 @@ import {SupabaseEspressosService} from '../../backend/supabase.espressos.service
   `,
   styles: [
     `
-      .new-espresso-formfield {
-        margin: 1em;
+      .receipe-accordion {
+        width: 95%;
       }
     `
   ],

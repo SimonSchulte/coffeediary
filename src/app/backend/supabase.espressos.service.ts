@@ -13,7 +13,10 @@ export class SupabaseEspressosService {
   }
 
   async getAll() {
-    const { data, error } = await this.supabase.from(this.table).select('*');
+    // Hole alle Espressos inkl. aller zugehörigen espresso_pull Einträge
+    const { data, error } = await this.supabase
+      .from(this.table)
+      .select('*, espresso_pulls(*)');
     if (error) throw error;
     return data;
   }
@@ -42,4 +45,3 @@ export class SupabaseEspressosService {
     return data;
   }
 }
-
