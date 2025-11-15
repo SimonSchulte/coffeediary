@@ -17,11 +17,6 @@ import {AppFooter} from './ui/app-footer.component';
         <button mat-flat-button color="primary" (click)="login()">Mit Google anmelden</button>
       </div>
     } @else {
-      <!--      <div class="user-block">-->
-        <!--        <span>Angemeldet als: {{ auth.getUser()?.email }}</span>-->
-        <!--        <button mat-flat-button color="primary" (click)="logout()">Logout</button>-->
-        <!--      </div>-->
-        <!-- ...bestehende App-Inhalte... -->
       <router-outlet></router-outlet>
     }
     <app-footer></app-footer>

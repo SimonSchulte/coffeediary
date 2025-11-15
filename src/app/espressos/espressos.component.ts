@@ -13,6 +13,7 @@ import {MatButtonModule} from '@angular/material/button';
 import NewEspressoDialog from './new-espresso-dialog.component';
 import NewExtractionDialogComponent from './new-extraction-dialog.component';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-espressos',
@@ -68,11 +69,9 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
                   <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
                 </table>
 
-                <div class="known-extraction-div">
-                  Bisher sind {{e.espresso_pulls?.length || 0}} Bezüg(e) bekannt
-                </div>
-
+                <
                 <button mat-flat-button color="primary" class="extraction-div" (click)="openExtractionDialog(e)">Bezug erfassen</button>
+                <button mat-stroked-button color="accent" class="extraction-div" (click)="goToExtractions(e)"> {{e.espresso_pulls?.length || 0}} Bezüge</button>
               </div>
 
             </mat-expansion-panel>
@@ -270,7 +269,7 @@ export class EspressosComponent implements OnInit {
   }
 
 
-  constructor(private espressos: SupabaseEspressosService, private cdr: ChangeDetectorRef) {
+  constructor(private espressos: SupabaseEspressosService, private cdr: ChangeDetectorRef, private router: Router) {
   }
 
   async ngOnInit(): Promise<void> {
@@ -304,5 +303,10 @@ export class EspressosComponent implements OnInit {
     this.dialog.open(NewExtractionDialogComponent, {
       data: { grinder_setting: e.grinder_setting },
     });
+  }
+
+  goToExtractions(e: any) {
+    // Navigiert zur ExtractionOverview-Seite mit Espresso-ID als Parameter
+    this.router.navigate(['/extractions'], { queryParams: { espressoId: e.id } });
   }
 }

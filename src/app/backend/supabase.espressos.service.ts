@@ -44,4 +44,19 @@ export class SupabaseEspressosService {
     if (error) throw error;
     return data;
   }
+
+  async getAllExtractions(espresso_id : number): Promise<any[]> {
+    // Beispiel: Holt alle Bezüge aus Supabase
+    // Passe dies ggf. an deine Datenstruktur an
+    const { data, error } = await this.supabase
+      .from('espresso_pulls')
+      .select('*')
+      .eq('espresso_id', espresso_id)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Fehler beim Laden der Bezüge:', error);
+      return [];
+    }
+    return data || [];
+  }
 }
