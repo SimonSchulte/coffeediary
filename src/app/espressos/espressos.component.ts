@@ -30,8 +30,8 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
           </div>
         </div>
       } @else {
-        @for (e of espressosList; track e.id) {
-          <mat-accordion class="espresso-accordion">
+        <mat-accordion class="espresso-accordion">
+          @for (e of espressosList; track e.id) {
             <mat-expansion-panel class="espresso" (opened)="onPanelOpened(e.id)" (closed)="onPanelClosed(e.id)">
               <mat-expansion-panel-header>
                 <mat-panel-title>{{ e.name }}</mat-panel-title>
@@ -76,8 +76,8 @@ import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
               </div>
 
             </mat-expansion-panel>
-          </mat-accordion>
-        }
+          }
+        </mat-accordion>
         <div class="grid">
           <mat-card class="espresso-card new-espresso-card" (click)="createNewCoffee()">
             <mat-card-title class="new-espresso-title">Neuer Espresso</mat-card-title>
@@ -283,7 +283,6 @@ export class EspressosComponent implements OnInit {
       const rows = await this.espressos.getAll();
       this.espressosList = rows ?? [];
 
-      console.log(this.espressosList);
     } catch (err) {
       console.error('Failed to load espressos', err);
       this.espressosList = [];
