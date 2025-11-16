@@ -32,7 +32,7 @@ import { SnackBarService } from '../services/snack-bar.service';
     </mat-dialog-content>
     <mat-dialog-actions>
       <button mat-button type="button" (click)="onCancel()">Abbrechen</button>
-      <button mat-flat-button color="primary" type="submit" [disabled]="!extractionForm.form.valid">Speichern
+      <button mat-flat-button color="primary" type="submit" [disabled]="!extractionForm.form.valid" (click)="onSubmit()">Speichern
       </button>
     </mat-dialog-actions>
 
