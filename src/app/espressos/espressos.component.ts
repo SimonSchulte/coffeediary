@@ -300,7 +300,7 @@ export class EspressosComponent implements OnInit {
 
   openExtractionDialog(e: any) {
     this.dialog.open(NewExtractionDialogComponent, {
-      data: { grinder_setting: e.grinder_setting, espressoId: e.id },
+      data: { grinder_setting: e.grinder_setting, espressoId: e.id, gramms: e.gramms },
     });
   }
 

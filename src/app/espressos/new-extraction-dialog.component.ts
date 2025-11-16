@@ -27,6 +27,10 @@ import { SnackBarService } from '../services/snack-bar.service';
           <mat-label>Mahlgrad</mat-label>
           <input matInput type="text" name="grinder_setting" [(ngModel)]="grinder_setting" required>
         </mat-form-field>
+        <mat-form-field class="espresso-formfield" appearance="fill">
+          <mat-label>Bohnen (g)</mat-label>
+          <input matInput type="number" name="gramms" [(ngModel)]="gramms" required>
+        </mat-form-field>
 
       </form>
     </mat-dialog-content>
@@ -42,6 +46,7 @@ export default class NewExtractionDialogComponent {
   @Input() grinder_setting: string = '';
   runtime: number | null = null;
   output: number | null = null;
+  gramms: number | null = null;
 
   espressoId : number;
 
@@ -53,6 +58,7 @@ export default class NewExtractionDialogComponent {
   ) {
     this.espressoId = data.espressoId;
     this.grinder_setting = data.grinder_setting;
+    this.gramms = data.gramms;
   }
 
   onCancel() {
@@ -67,6 +73,7 @@ export default class NewExtractionDialogComponent {
           runtime: this.runtime,
           output: this.output,
           grinder_setting: this.grinder_setting,
+          gramms: this.gramms,
         });
         this.snackBarService.open('Neuer Bezug erfolgreich gespeichert!');
         this.dialogRef.close({runtime: this.runtime, output: this.output, grinder_setting: this.grinder_setting});
