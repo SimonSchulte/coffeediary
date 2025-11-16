@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
-import { BehaviorSubject, Observable } from 'rxjs';
+import {Injectable} from '@angular/core';
+import {createClient, SupabaseClient, Session, User} from '@supabase/supabase-js';
+import {BehaviorSubject, Observable} from 'rxjs';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class SupabaseAuthService {
   private supabase: SupabaseClient;
   private session: Session | null = null;
@@ -19,7 +19,7 @@ export class SupabaseAuthService {
     const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50Y3lzbGxia3hmaWdjY2VhYWN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNTA0OTIsImV4cCI6MjA3ODcyNjQ5Mn0.QUyRWK5JjZLoPtg0XbzJfHQnIrfR3ZXPm-VPvt7MsZI';
     this.supabase = createClient(url, key);
 
-    this.supabase.auth.getSession().then(({ data }) => {
+    this.supabase.auth.getSession().then(({data}) => {
       this.session = data.session;
       this.user = data.session?.user ?? null;
       this.userSubject.next(this.user);
@@ -42,7 +42,12 @@ export class SupabaseAuthService {
   }
 
   async signInWithGoogle() {
-    const {data, error } = await this.supabase.auth.signInWithOAuth({ provider: 'google' });
+    const {data, error} = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options : {
+        redirectTo: "https://simonschulte.github.io/coffeediary/espressos"
+      }
+    });
     if (error) throw error;
   }
 
