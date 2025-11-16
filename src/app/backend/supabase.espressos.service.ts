@@ -34,7 +34,9 @@ export class SupabaseEspressosService {
     return data;
   }
   async createEspressoPull(espressoPull: any) {
-    const {data, error} = await this.supabase.from("espresso_pulls").insert([espressoPull]);
+    const {data, error} = await this.supabase
+      .from("espresso_pulls")
+      .insert([espressoPull]);
     if (error) throw error;
     return data;
   }
