@@ -12,7 +12,7 @@ import { SnackBarService } from '../services/snack-bar.service';
   standalone: true,
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogContent, MatDialogActions],
   template: `
-    <h2 mat-dialog-title>Bezug erfassen - Wie lief's?</h2>
+    <h2 mat-dialog-title style="margin-left: 16px">Bezug erfassen - Wie lief's?</h2>
     <mat-dialog-content>
       <form #extractionForm="ngForm" (ngSubmit)="onSubmit()">
         <mat-form-field class="espresso-formfield" appearance="fill">
