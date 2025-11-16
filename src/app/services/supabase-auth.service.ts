@@ -44,9 +44,9 @@ export class SupabaseAuthService {
   async signInWithGoogle() {
     const {data, error} = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
-      options : {
-        redirectTo: "https://simonschulte.github.io/coffeediary/espressos"
-      }
+      // options : {
+      //   redirectTo: "https://simonschulte.github.io/coffeediary/espressos"
+      // }
     });
     if (error) throw error;
   }
