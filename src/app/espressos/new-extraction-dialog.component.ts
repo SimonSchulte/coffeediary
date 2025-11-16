@@ -1,6 +1,6 @@
-import {Component, Input} from '@angular/core';
+import {Component, Inject, Input} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {MatDialogActions, MatDialogContent, MatDialogRef} from '@angular/material/dialog';
+import {MatDialogActions, MatDialogContent, MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
@@ -43,11 +43,17 @@ export default class NewExtractionDialogComponent {
   runtime: number | null = null;
   output: number | null = null;
 
+  espressoId : number;
+
   constructor(
     private dialogRef: MatDialogRef<NewExtractionDialogComponent>,
     private supabaseEspressosService: SupabaseEspressosService,
-    private snackBarService: SnackBarService
-  ) {}
+    private snackBarService: SnackBarService,
+    @Inject(MAT_DIALOG_DATA) public data: any
+  ) {
+    this.espressoId = data.espressoId;
+    this.grinder_setting = data.grinder_setting;
+  }
 
   onCancel() {
     this.dialogRef.close();
@@ -57,6 +63,7 @@ export default class NewExtractionDialogComponent {
     if (this.runtime && this.output && this.grinder_setting) {
       try {
         await this.supabaseEspressosService.createEspressoPull({
+          espresso_id: this.espressoId,
           runtime: this.runtime,
           output: this.output,
           grinder_setting: this.grinder_setting,
