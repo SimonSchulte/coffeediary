@@ -33,6 +33,11 @@ export class SupabaseEspressosService {
     if (error) throw error;
     return data;
   }
+  async createEspressoPull(espressoPull: any) {
+    const {data, error} = await this.supabase.from("espresso_pulls").insert([espressoPull]);
+    if (error) throw error;
+    return data;
+  }
 
   async update(id: number, espresso: any) {
     const {data, error} = await this.supabase

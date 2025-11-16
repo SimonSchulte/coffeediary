@@ -4,6 +4,8 @@ import {MatDialogActions, MatDialogContent, MatDialogRef} from '@angular/materia
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
+import { SupabaseEspressosService } from '../backend/supabase.espressos.service';
+import { SnackBarService } from '../services/snack-bar.service';
 
 @Component({
   selector: 'app-new-extraction-dialog',
@@ -41,17 +43,31 @@ export default class NewExtractionDialogComponent {
   runtime: number | null = null;
   output: number | null = null;
 
-  constructor(private dialogRef: MatDialogRef<NewExtractionDialogComponent>) {
-  }
+  constructor(
+    private dialogRef: MatDialogRef<NewExtractionDialogComponent>,
+    private supabaseEspressosService: SupabaseEspressosService,
+    private snackBarService: SnackBarService
+  ) {}
 
   onCancel() {
     this.dialogRef.close();
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (this.runtime && this.output && this.grinder_setting) {
-      this.dialogRef.close({runtime: this.runtime, output: this.output, grinder_setting: this.grinder_setting});
+      try {
+        await this.supabaseEspressosService.createEspressoPull({
+          runtime: this.runtime,
+          output: this.output,
+          grinder_setting: this.grinder_setting,
+        });
+        this.snackBarService.open('Neuer Bezug erfolgreich gespeichert!');
+        this.dialogRef.close({runtime: this.runtime, output: this.output, grinder_setting: this.grinder_setting});
+      } catch (error) {
+        this.snackBarService.open('Fehler beim Speichern des Bezugs');
+      }
+    } else {
+      this.snackBarService.open('Bitte alle Felder ausfüllen!');
     }
   }
 }
-
