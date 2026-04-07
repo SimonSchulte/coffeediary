@@ -1,5 +1,5 @@
 import {Component, OnInit, ChangeDetectorRef, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {MatCardModule} from '@angular/material/card';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatIconModule} from '@angular/material/icon';
@@ -11,14 +11,15 @@ import {
 } from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import NewEspressoDialog from './new-espresso-dialog.component';
-import NewExtractionDialogComponent from './new-extraction-dialog.component';
+import NewExtractionDialogComponent, {NewExtractionDialogData} from './new-extraction-dialog.component';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {Espresso} from '../models/espresso';
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-espressos',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule],
+  imports: [MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule],
   template: `
     <section style="padding: 16px;">
       <h2>Espressos</h2>
@@ -255,7 +256,7 @@ import { Router } from '@angular/router';
   ]
 })
 export class EspressosComponent implements OnInit {
-  espressosList: any[] = [];
+  espressosList: Espresso[] = [];
   loading = true;
   readonly dialog = inject(MatDialog);
   expanded: { [id: number]: boolean } = {};
@@ -298,14 +299,17 @@ export class EspressosComponent implements OnInit {
     this.expanded[id] = false;
   }
 
-  openExtractionDialog(e: any) {
-    this.dialog.open(NewExtractionDialogComponent, {
-      data: { grinder_setting: e.grinder_setting, espressoId: e.id, gramms: e.gramms },
-    });
+  openExtractionDialog(e: Espresso): void {
+    const data: NewExtractionDialogData = {
+      espressoId: e.id,
+      grinder_setting: e.grinder_setting,
+      gramms: e.gramms,
+    };
+    this.dialog.open(NewExtractionDialogComponent, {data});
   }
 
-  goToExtractions(e: any) {
+  goToExtractions(e: Espresso): void {
     // Navigiert zur ExtractionOverview-Seite mit Espresso-ID als Parameter
-    this.router.navigate(['/extractions'], { queryParams: { espressoId: e.id } });
+    this.router.navigate(['/extractions'], {queryParams: {espressoId: e.id}});
   }
 }

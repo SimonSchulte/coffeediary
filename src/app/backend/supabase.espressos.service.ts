@@ -1,5 +1,12 @@
 import {Injectable} from '@angular/core';
 import {createClient, SupabaseClient} from '@supabase/supabase-js';
+import {
+  Espresso,
+  EspressoPull,
+  EspressoRecipe,
+  NewEspressoInput,
+  NewEspressoPullInput,
+} from '../models/espresso';
 
 @Injectable({providedIn: 'root'})
 export class SupabaseEspressosService {
@@ -12,54 +19,54 @@ export class SupabaseEspressosService {
     this.supabase = createClient(url, key);
   }
 
-  async getAll() {
+  async getAll(): Promise<Espresso[]> {
     // Hole alle Espressos inkl. aller zugehörigen espresso_pull Einträge
     const {data, error} = await this.supabase
       .from(this.table)
       .select('*, espresso_pulls(*)')
-      .order('id', {ascending: true});;
+      .order('id', {ascending: true});
     if (error) throw error;
-    return data;
+    return (data ?? []) as Espresso[];
   }
 
-  async getById(id: number) {
+  async getById(id: number): Promise<Espresso> {
     const {data, error} = await this.supabase.from(this.table).select('*').eq('id', id).single();
     if (error) throw error;
-    return data;
+    return data as Espresso;
   }
 
-  async create(espresso: any) {
+  async create(espresso: NewEspressoInput): Promise<Espresso[]> {
     const {data, error} = await this.supabase.from(this.table).insert([espresso]).select();
     if (error) throw error;
-    return data;
-  }
-  async createEspressoPull(espressoPull: any) {
-    const {data, error} = await this.supabase
-      .from("espresso_pulls")
-      .insert([espressoPull]);
-    if (error) throw error;
-    return data;
+    return (data ?? []) as Espresso[];
   }
 
-  async update(id: number, espresso: any) {
+  async createEspressoPull(espressoPull: NewEspressoPullInput): Promise<EspressoPull[]> {
+    const {data, error} = await this.supabase
+      .from('espresso_pulls')
+      .insert([espressoPull])
+      .select();
+    if (error) throw error;
+    return (data ?? []) as EspressoPull[];
+  }
+
+  async update(id: number, espresso: Partial<NewEspressoInput>): Promise<Espresso[]> {
     const {data, error} = await this.supabase
       .from(this.table)
       .update(espresso)
       .eq('id', id)
       .select();
     if (error) throw error;
-    return data;
+    return (data ?? []) as Espresso[];
   }
 
-  async delete(id: number) {
+  async delete(id: number): Promise<Espresso[]> {
     const {data, error} = await this.supabase.from(this.table).delete().eq('id', id).select();
     if (error) throw error;
-    return data;
+    return (data ?? []) as Espresso[];
   }
 
-  async getAllExtractions(espresso_id: number): Promise<any[]> {
-    // Beispiel: Holt alle Bezüge aus Supabase
-    // Passe dies ggf. an deine Datenstruktur an
+  async getAllExtractions(espresso_id: number): Promise<EspressoPull[]> {
     const {data, error} = await this.supabase
       .from('espresso_pulls')
       .select('*')
@@ -69,18 +76,11 @@ export class SupabaseEspressosService {
       console.error('Fehler beim Laden der Bezüge:', error);
       return [];
     }
-    return data || [];
+    return (data ?? []) as EspressoPull[];
   }
 
-  async updateDefaultReceipt(
-    id: number,
-    receip: { gramms: number; ratio: number; grinder_setting: number; runtime: number }
-  ): Promise<any> {
-    const {data, error} = await this.supabase
-      .from('espressos')
-      .update(receip)
-      .eq('id', id);
+  async updateDefaultRecipe(id: number, recipe: EspressoRecipe): Promise<void> {
+    const {error} = await this.supabase.from('espressos').update(recipe).eq('id', id);
     if (error) throw error;
-    return data;
   }
 }

@@ -9,6 +9,7 @@ import {ActivatedRoute} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {SnackBarService} from '../services/snack-bar.service';
 import {MatIconButton} from '@angular/material/button';
+import {EspressoPull} from '../models/espresso';
 
 @Component({
   selector: 'app-extraction-overview',
@@ -126,7 +127,7 @@ import {MatIconButton} from '@angular/material/button';
 })
 export class ExtractionOverviewComponent implements OnInit {
   displayedColumns: string[] = ['created_at', 'grinder_setting', 'gramms', 'runtime', 'ratio', 'output', 'publish'];
-  dataSource = new MatTableDataSource<any>([]);
+  dataSource = new MatTableDataSource<EspressoPull>([]);
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private espressos: SupabaseEspressosService,
@@ -145,17 +146,15 @@ export class ExtractionOverviewComponent implements OnInit {
     });
   }
 
-  async publishExtraction(element: any): Promise<void> {
+  async publishExtraction(element: EspressoPull): Promise<void> {
     try {
-      await this.espressos.updateDefaultReceipt(element.espresso_id, {
+      await this.espressos.updateDefaultRecipe(element.espresso_id, {
         gramms: element.gramms,
-        ratio: (element.output / element.gramms),
+        ratio: element.output / element.gramms,
         grinder_setting: element.grinder_setting,
-        runtime: element.runtime
-      }).then(value => {
-
-        this.snackBar.open('Espresso erfolgreich aktualisiert!');
+        runtime: element.runtime,
       });
+      this.snackBar.open('Espresso erfolgreich aktualisiert!');
     } catch (err) {
       this.snackBar.open('Fehler beim Aktualisieren des Espressos!');
     }

@@ -93,26 +93,35 @@ import {MatExpansionModule} from '@angular/material/expansion';
   standalone: true
 })
 class NewEspressoDialog {
-  protected espresso_name: any;
-  protected espresso_ratio: any;
-  protected espresso_gramms: any;
-  protected espresso_timer: any;
-  protected espresso_grinder_setting: any;
-  protected espresso_vendor: any;
+  protected espresso_name = '';
+  protected espresso_vendor = '';
+  protected espresso_ratio: number | null = 2;
+  protected espresso_gramms: number | null = 18;
+  protected espresso_timer: number | null = 25;
+  protected espresso_grinder_setting: number | null = null;
 
   constructor(protected supabaseEspressos: SupabaseEspressosService, protected snackBar: MatSnackBar) {
   }
 
-  protected addEspresso() {
-    this.supabaseEspressos.create({
+  protected addEspresso(): void {
+    if (
+      this.espresso_ratio == null ||
+      this.espresso_gramms == null ||
+      this.espresso_timer == null ||
+      this.espresso_grinder_setting == null
+    ) {
+      return;
+    }
+    this.supabaseEspressos
+      .create({
         name: this.espresso_name,
         vendor: this.espresso_vendor,
         grinder_setting: this.espresso_grinder_setting,
         ratio: this.espresso_ratio,
         runtime: this.espresso_timer,
-        gramms: this.espresso_gramms
-      }
-    ).then(r => this.snackBar.open('Espresso hinzugefügt!', 'OK', {duration: 3000}));
+        gramms: this.espresso_gramms,
+      })
+      .then(() => this.snackBar.open('Espresso hinzugefügt!', 'OK', {duration: 3000}));
   }
 }
 

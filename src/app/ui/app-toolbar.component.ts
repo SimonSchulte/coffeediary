@@ -6,7 +6,7 @@ import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {RouterLink} from '@angular/router';
 
 import {MatMenuModule} from '@angular/material/menu';
-import {AsyncPipe, NgFor, NgIf} from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {SupabaseAuthService} from '../services/supabase-auth.service';
 import {Observable} from 'rxjs';
 import {User} from '@supabase/supabase-js';
@@ -21,10 +21,8 @@ import {User} from '@supabase/supabase-js';
     MatSnackBarModule,
     RouterLink,
     MatMenuModule,
-    AsyncPipe,
-    NgIf,
-    NgFor
-  ],
+    AsyncPipe
+],
   template: `
     <mat-toolbar color="primary" class="toolbar">
       <button mat-icon-button [matMenuTriggerFor]="menu">
@@ -33,31 +31,29 @@ import {User} from '@supabase/supabase-js';
       <span class="toolbar-title">Coffee Diary</span>
       <span class="toolbar-spacer"></span>
       <span class="user-info">
-        <ng-container *ngIf="user$ | async as user; else noUser">
+        @if (user$ | async; as user) {
           <span class="user-name">{{ user.user_metadata?.['full_name'] || user.email }}</span>
           <button mat-icon-button [matMenuTriggerFor]="userMenu">
-            <ng-container *ngIf="user.user_metadata?.['avatar_url']; else noAvatar">
+            @if (user.user_metadata?.['avatar_url']) {
               <img class="user-avatar" [src]="user.user_metadata?.['avatar_url']" alt="Avatar" />
-            </ng-container>
-            <ng-template #noAvatar>
+            } @else {
               <mat-icon class="user-avatar">account_circle</mat-icon>
-            </ng-template>
+            }
           </button>
-        </ng-container>
-        <ng-template #noUser>
+        } @else {
           <mat-icon class="user-avatar">account_circle</mat-icon>
-        </ng-template>
+        }
       </span>
     </mat-toolbar>
     <mat-menu #menu="matMenu">
-      <ng-container *ngFor="let link of links; trackBy: trackByPath">
+      @for (link of links; track link.path) {
         <button mat-menu-item [routerLink]="link.path">{{ link.label }}</button>
-      </ng-container>
+      }
     </mat-menu>
     <mat-menu #userMenu="matMenu">
       <button mat-menu-item (click)="logout()">Abmelden</button>
     </mat-menu>
-  `,
+    `,
   styles: [
     `
       .toolbar {
@@ -120,10 +116,6 @@ export class AppToolbar {
 
   constructor(public auth: SupabaseAuthService) {
     this.user$ = this.auth.user$;
-  }
-
-  trackByPath(index: number, link: { path: string; label: string }) {
-    return link.path;
   }
 
   logout() {
