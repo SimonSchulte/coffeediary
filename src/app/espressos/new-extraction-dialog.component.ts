@@ -4,6 +4,7 @@ import {MatDialogActions, MatDialogContent, MatDialogRef, MAT_DIALOG_DATA} from 
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
+import {MatIconModule} from '@angular/material/icon';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 import {SnackBarService} from '../services/snack-bar.service';
 import {Espresso} from '../models/espresso';
@@ -23,37 +24,56 @@ export interface NewExtractionDialogResult {
 @Component({
   selector: 'app-new-extraction-dialog',
   standalone: true,
-  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogContent, MatDialogActions],
+  imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatIconModule, MatDialogContent, MatDialogActions],
   template: `
-    <h2 mat-dialog-title style="margin-left: 16px">Bezug erfassen - Wie lief's?</h2>
-    <mat-dialog-content>
+    <h2 mat-dialog-title>Bezug erfassen &mdash; Wie lief's?</h2>
+    <mat-dialog-content class="cd-dialog-content">
       <form #extractionForm="ngForm" (ngSubmit)="onSubmit()">
-        <mat-form-field class="espresso-formfield" appearance="fill">
+        <mat-form-field class="espresso-formfield" appearance="outline">
           <mat-label>Bezug (Sekunden)</mat-label>
-          <input matInput type="number" name="runtime" [(ngModel)]="runtime" required>
+          <input matInput type="number" inputmode="numeric" name="runtime" [(ngModel)]="runtime" required>
+          <mat-icon matSuffix>timer</mat-icon>
         </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="fill">
+        <mat-form-field class="espresso-formfield" appearance="outline">
           <mat-label>Output (g)</mat-label>
-          <input matInput type="number" name="output" [(ngModel)]="output" required>
+          <input matInput type="number" inputmode="decimal" name="output" [(ngModel)]="output" required>
+          <mat-icon matSuffix>output</mat-icon>
         </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="fill">
+        <mat-form-field class="espresso-formfield" appearance="outline">
           <mat-label>Mahlgrad</mat-label>
-          <input matInput type="number" name="grinder_setting" [(ngModel)]="grinder_setting" required>
+          <input matInput type="number" inputmode="decimal" name="grinder_setting" [(ngModel)]="grinder_setting" required>
+          <mat-icon matSuffix>settings</mat-icon>
         </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="fill">
+        <mat-form-field class="espresso-formfield" appearance="outline">
           <mat-label>Bohnen (g)</mat-label>
-          <input matInput type="number" name="gramms" [(ngModel)]="gramms" required>
+          <input matInput type="number" inputmode="decimal" name="gramms" [(ngModel)]="gramms" required>
+          <mat-icon matSuffix>scale</mat-icon>
         </mat-form-field>
-
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions>
+    <mat-dialog-actions align="end">
       <button mat-button type="button" (click)="onCancel()">Abbrechen</button>
-      <button mat-flat-button color="primary" type="submit" [disabled]="!extractionForm.form.valid" (click)="onSubmit()">Speichern
+      <button mat-flat-button color="primary" type="submit" [disabled]="!extractionForm.form.valid" (click)="onSubmit()">
+        <mat-icon>check</mat-icon>
+        Speichern
       </button>
     </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .cd-dialog-content {
+        display: flex;
+        flex-direction: column;
+        padding-top: 8px;
+      }
 
-  `
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+    `
+  ]
 })
 export default class NewExtractionDialogComponent {
   runtime: number | null = null;

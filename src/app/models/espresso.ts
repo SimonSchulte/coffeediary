@@ -9,6 +9,7 @@ export interface Espresso extends EspressoRecipe {
   id: number;
   name: string;
   vendor: string;
+  archived?: boolean;
   espresso_pulls?: EspressoPull[];
 }
 

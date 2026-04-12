@@ -1,46 +1,59 @@
-import {Component, OnInit, ChangeDetectorRef, inject} from '@angular/core';
-import {SnackBarService} from '../services/snack-bar.service';
+import {Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, inject} from '@angular/core';
 
 import {MatCardModule} from '@angular/material/card';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatIconModule} from '@angular/material/icon';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatTableModule} from '@angular/material/table';
-
-import {
-  MatDialog
-} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
-import NewEspressoDialog from './new-espresso-dialog.component';
-import NewExtractionDialogComponent, {NewExtractionDialogData} from './new-extraction-dialog.component';
+import {MatChipsModule} from '@angular/material/chips';
+
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {SnackBarService} from '../services/snack-bar.service';
 import {Espresso} from '../models/espresso';
-import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-espressos',
+  selector: 'app-espresso-archiv',
   standalone: true,
-  imports: [MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatCardModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
+    MatButtonModule,
+    MatExpansionModule,
+    MatTableModule,
+    MatChipsModule,
+  ],
   template: `
     <section class="espresso-section">
       <header class="espresso-section-header">
-        <h2>Espressos</h2>
-        <p class="espresso-section-sub">Dein Tagebuch an geröstetem Glück.</p>
+        <div class="archiv-header-title">
+          <mat-icon class="archiv-header-icon">inventory_2</mat-icon>
+          <h2>Archiv</h2>
+        </div>
+        <p class="espresso-section-sub">Archivierte Espressos – nicht mehr aktiv.</p>
       </header>
 
       @if (loading) {
         <div class="espresso-loading">
           <mat-progress-spinner mode="indeterminate" diameter="48"></mat-progress-spinner>
-          <p>Extracting Espressos&hellip;</p>
+          <p>Lade Archiv&hellip;</p>
         </div>
       } @else {
         <mat-accordion class="espresso-accordion">
           @for (e of espressosList; track e.id) {
-            <mat-expansion-panel class="espresso" (opened)="onPanelOpened(e.id)" (closed)="onPanelClosed(e.id)">
+            <mat-expansion-panel class="espresso espresso--archived">
               <mat-expansion-panel-header>
                 <mat-panel-title>{{ e.name }}</mat-panel-title>
-                <mat-panel-description>
-                  {{ e.vendor }}
+                <mat-panel-description class="archiv-panel-description">
+                  <span>{{ e.vendor }}</span>
+                  <mat-chip-set class="archiv-badge">
+                    <mat-chip>
+                      <mat-icon matChipAvatar>inventory_2</mat-icon>
+                      Archiviert
+                    </mat-chip>
+                  </mat-chip-set>
                 </mat-panel-description>
               </mat-expansion-panel-header>
               <div class="espresso-details">
@@ -51,19 +64,14 @@ import { Router } from '@angular/router';
                       {icon: 'double_arrow', desc: 'Verhältnis', value: '1:' + (typeof e.ratio === 'number' ? e.ratio.toFixed(1) : e.ratio)},
                       {icon: 'output', desc: 'Output', value: (typeof e.gramms === 'number' && typeof e.ratio === 'number' ? (e.gramms * e.ratio).toFixed(0) : (e.gramms * e.ratio)) + 'g'}
                     ]" class="mat-elevation-z0 espresso-table">
-                  <!-- Icon Column -->
                   <ng-container matColumnDef="icon">
                     <td mat-cell *matCellDef="let element">
                       <mat-icon class="espresso-icon">{{ element.icon }}</mat-icon>
                     </td>
                   </ng-container>
-                  <!-- Description Column -->
                   <ng-container matColumnDef="desc">
-                    <td mat-cell *matCellDef="let element">
-                      {{ element.desc }}
-                    </td>
+                    <td mat-cell *matCellDef="let element">{{ element.desc }}</td>
                   </ng-container>
-                  <!-- Value Column -->
                   <ng-container matColumnDef="value">
                     <td mat-cell *matCellDef="let element">
                       <span class="espresso-value">{{ element.value }}</span>
@@ -73,43 +81,24 @@ import { Router } from '@angular/router';
                 </table>
 
                 <div class="espresso-actions">
-                  <button mat-flat-button color="primary" class="espresso-action-cta" (click)="openExtractionDialog(e)">
-                    <mat-icon>add_circle</mat-icon>
-                    Bezug erfassen
-                  </button>
-                  <button mat-button class="espresso-action-secondary" (click)="goToExtractions(e)">
-                    <mat-icon>local_cafe</mat-icon>
-                    {{e.espresso_pulls?.length || 0}} Bezüge
-                  </button>
-                  <button mat-button class="espresso-action-secondary" (click)="archiveEspresso(e)">
-                    <mat-icon>archive</mat-icon>
-                    Archivieren
+                  <button mat-flat-button color="primary" class="espresso-action-cta" (click)="restoreEspresso(e)">
+                    <mat-icon>unarchive</mat-icon>
+                    Wiederherstellen
                   </button>
                 </div>
               </div>
-
             </mat-expansion-panel>
           }
         </mat-accordion>
 
         @if (espressosList.length === 0) {
           <div class="espresso-empty">
-            <mat-icon class="espresso-empty-icon">coffee_maker</mat-icon>
-            <p>Noch keine Espressos. Tippe auf <strong>+ Neu</strong>, um anzufangen.</p>
+            <mat-icon class="espresso-empty-icon">inventory_2</mat-icon>
+            <p>Keine archivierten Espressos.</p>
           </div>
         }
       }
     </section>
-
-    <button
-      mat-fab
-      extended
-      class="cd-fab"
-      aria-label="Neuer Espresso"
-      (click)="createNewCoffee()">
-      <mat-icon>add</mat-icon>
-      Neu
-    </button>
   `,
   styles: [
     `
@@ -123,9 +112,22 @@ import { Router } from '@angular/router';
         padding: 8px 4px 16px;
       }
 
-      .espresso-section-header h2 {
+      .archiv-header-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .archiv-header-title h2 {
         margin: 0;
         color: var(--mat-sys-on-surface);
+      }
+
+      .archiv-header-icon {
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
       }
 
       .espresso-section-sub {
@@ -153,9 +155,24 @@ import { Router } from '@angular/router';
         background: var(--mat-sys-surface-container-low);
       }
 
+      .espresso--archived {
+        opacity: 0.82;
+      }
+
+      .archiv-panel-description {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .archiv-badge {
+        pointer-events: none;
+      }
+
       .espresso-details {
         padding: 8px 4px 4px;
-        border-left: 3px solid var(--cd-accent-crema);
+        border-left: 3px solid var(--mat-sys-outline-variant);
         margin-left: 4px;
       }
 
@@ -170,7 +187,7 @@ import { Router } from '@angular/router';
       }
 
       .espresso-icon {
-        color: var(--mat-sys-tertiary);
+        color: var(--mat-sys-on-surface-variant);
         vertical-align: middle;
       }
 
@@ -194,18 +211,11 @@ import { Router } from '@angular/router';
         height: 48px;
       }
 
-      .espresso-action-secondary {
-        width: 100%;
-        height: 44px;
-        color: var(--mat-sys-on-surface-variant);
-      }
-
       @media (min-width: 600px) {
         .espresso-actions {
           flex-direction: row;
         }
-        .espresso-action-cta,
-        .espresso-action-secondary {
+        .espresso-action-cta {
           flex: 1 1 auto;
         }
       }
@@ -224,67 +234,34 @@ import { Router } from '@angular/router';
         font-size: 64px;
         width: 64px;
         height: 64px;
-        color: var(--cd-accent-crema);
-      }
-
-      // Floating action button — extended, bottom-right, thumb-reachable.
-      .cd-fab {
-        position: fixed;
-        right: 20px;
-        bottom: 80px;
-        z-index: 50;
-        --mdc-extended-fab-container-color: var(--mat-sys-tertiary-container);
-        --mat-fab-extended-container-color: var(--mat-sys-tertiary-container);
-        color: var(--mat-sys-on-tertiary-container);
-        box-shadow: 0 6px 20px rgba(46, 21, 0, 0.25);
+        color: var(--mat-sys-on-surface-variant);
       }
 
       @media (max-width: 600px) {
         .espresso-section {
-          padding: 12px 12px 110px;
-        }
-        .cd-fab {
-          right: 16px;
-          bottom: 72px;
+          padding: 12px 12px 32px;
         }
       }
     `
   ]
 })
-export class EspressosComponent implements OnInit {
+export class EspressoArchivComponent implements OnInit {
   espressosList: Espresso[] = [];
   loading = true;
-  readonly dialog = inject(MatDialog);
+
+  private espressos = inject(SupabaseEspressosService);
+  private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(SnackBarService);
-  expanded: { [id: number]: boolean } = {};
-
- async createNewCoffee(): Promise<void> {
-    this.dialog.open(NewEspressoDialog, {
-      panelClass: 'cd-dialog',
-      autoFocus: 'first-tabbable',
-      maxWidth: '95vw',
-      width: '480px',
-    }).afterClosed().subscribe( async () => {
-      await this.extractEspressos();
-    });
-  }
-
-
-  constructor(private espressos: SupabaseEspressosService, private cdr: ChangeDetectorRef, private router: Router) {
-  }
 
   async ngOnInit(): Promise<void> {
-    await this.extractEspressos();
+    await this.load();
   }
 
-  async extractEspressos(): Promise<void> {
+  async load(): Promise<void> {
     try {
       this.loading = true;
-      const rows = await this.espressos.getAll();
-      this.espressosList = rows ?? [];
-
-    } catch (err) {
-      console.error('Failed to load espressos', err);
+      this.espressosList = (await this.espressos.getArchived()) ?? [];
+    } catch {
       this.espressosList = [];
     } finally {
       this.loading = false;
@@ -292,41 +269,13 @@ export class EspressosComponent implements OnInit {
     }
   }
 
-  onPanelOpened(id: number) {
-    this.expanded[id] = true;
-  }
-
-  onPanelClosed(id: number) {
-    this.expanded[id] = false;
-  }
-
-  openExtractionDialog(e: Espresso): void {
-    const data: NewExtractionDialogData = {
-      espressoId: e.id,
-      grinder_setting: e.grinder_setting,
-      gramms: e.gramms,
-    };
-    this.dialog.open(NewExtractionDialogComponent, {
-      data,
-      panelClass: 'cd-dialog',
-      autoFocus: 'first-tabbable',
-      maxWidth: '95vw',
-      width: '480px',
-    });
-  }
-
-  goToExtractions(e: Espresso): void {
-    // Navigiert zur ExtractionOverview-Seite mit Espresso-ID als Parameter
-    this.router.navigate(['/extractions'], {queryParams: {espressoId: e.id}});
-  }
-
-  async archiveEspresso(e: Espresso): Promise<void> {
+  async restoreEspresso(e: Espresso): Promise<void> {
     try {
-      await this.espressos.setArchived(e.id, true);
-      this.snackBar.open(`„${e.name}" archiviert.`);
-      await this.extractEspressos();
+      await this.espressos.setArchived(e.id, false);
+      this.snackBar.open(`„${e.name}" wiederhergestellt.`);
+      await this.load();
     } catch {
-      this.snackBar.open('Fehler beim Archivieren.');
+      this.snackBar.open('Fehler beim Wiederherstellen.');
     }
   }
 }

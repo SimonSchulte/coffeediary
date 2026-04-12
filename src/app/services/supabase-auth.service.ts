@@ -42,11 +42,15 @@ export class SupabaseAuthService {
   }
 
   async signInWithGoogle() {
+    // Build redirect from current origin so Google OAuth returns to wherever the app is running
+    // (localhost during `ng serve`, GitHub Pages in prod). Both URLs must be allowed in Supabase
+    // Auth → URL Configuration → Redirect URLs.
+    const {pathname} = window.location;
+    const base = pathname.startsWith('/coffeediary') ? '/coffeediary' : '';
+    const redirectTo = `${window.location.origin}${base}/espressos`;
     const {data, error} = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
-      options : {
-        redirectTo: "https://simonschulte.github.io/coffeediary/espressos"
-      }
+      options: {redirectTo},
     });
     if (error) throw error;
   }

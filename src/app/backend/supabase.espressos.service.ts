@@ -20,13 +20,29 @@ export class SupabaseEspressosService {
   }
 
   async getAll(): Promise<Espresso[]> {
-    // Hole alle Espressos inkl. aller zugehörigen espresso_pull Einträge
+    // Hole alle aktiven (nicht archivierten) Espressos inkl. aller zugehörigen espresso_pull Einträge
     const {data, error} = await this.supabase
       .from(this.table)
       .select('*, espresso_pulls(*)')
+      .eq('archived', false)
       .order('id', {ascending: true});
     if (error) throw error;
     return (data ?? []) as Espresso[];
+  }
+
+  async getArchived(): Promise<Espresso[]> {
+    const {data, error} = await this.supabase
+      .from(this.table)
+      .select('*, espresso_pulls(*)')
+      .eq('archived', true)
+      .order('id', {ascending: true});
+    if (error) throw error;
+    return (data ?? []) as Espresso[];
+  }
+
+  async setArchived(id: number, archived: boolean): Promise<void> {
+    const {error} = await this.supabase.from(this.table).update({archived}).eq('id', id);
+    if (error) throw error;
   }
 
   async getById(id: number): Promise<Espresso> {

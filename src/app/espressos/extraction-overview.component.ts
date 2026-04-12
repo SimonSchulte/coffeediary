@@ -16,13 +16,14 @@ import {EspressoPull} from '../models/espresso';
   standalone: true,
   imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton],
   template: `
-    <mat-card>
+    <mat-card appearance="outlined" class="extraction-card">
       <h2>Bezüge Übersicht</h2>
-      <h4>Das Verhältnis
+      <h4 class="extraction-hint">Das Verhältnis
         <mat-icon>double_arrow</mat-icon>
         wird automatisch berechnet
       </h4>
-      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+      <div class="table-scroll">
+      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z0 extraction-table">
         <!-- Datum Column -->
         <ng-container matColumnDef="created_at">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>
@@ -72,7 +73,7 @@ import {EspressoPull} from '../models/espresso';
             <mat-icon>publish</mat-icon>
           </th>
           <td mat-cell *matCellDef="let element">
-            <button mat-icon-button color="primary" (click)="publishExtraction(element)">
+            <button mat-icon-button (click)="publishExtraction(element)" aria-label="Als Standardrezept übernehmen">
               <mat-icon>publish</mat-icon>
             </button>
           </td>
@@ -81,46 +82,76 @@ import {EspressoPull} from '../models/espresso';
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
+      </div>
       <mat-paginator [pageSize]="10"></mat-paginator>
     </mat-card>
   `,
   styles: [
     `
-      mat-card {
-        margin: 24px;
+      .extraction-card {
+        margin: 16px;
         padding: 16px;
+        background: var(--mat-sys-surface-container-low);
       }
 
-      table {
+      @media (min-width: 600px) {
+        .extraction-card {
+          margin: 24px auto;
+          max-width: 960px;
+        }
+      }
+
+      h2 {
+        margin-top: 0;
+      }
+
+      .extraction-hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--mat-sys-on-surface-variant);
+        font-weight: 400;
+        margin: 0 0 12px;
+      }
+
+      .extraction-hint mat-icon {
+        color: var(--mat-sys-tertiary);
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      .table-scroll {
         width: 100%;
-        margin-bottom: 16px;
-        max-width: 100%;
-        box-sizing: border-box;
-        display: block;
         overflow-x: auto;
+        margin-bottom: 12px;
+        mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
       }
 
-      .mat-elevation-z2 {
+      .extraction-table {
         width: 100%;
-        box-sizing: border-box;
+        background: transparent;
+        font-variant-numeric: tabular-nums;
       }
 
-      th, td {
-        word-break: break-word;
+      .extraction-table .mat-mdc-header-cell {
+        color: var(--mat-sys-on-surface-variant);
       }
 
-      th.mat-header-cell, td.mat-cell {
+      .extraction-table .mat-mdc-header-cell mat-icon {
+        color: var(--mat-sys-tertiary);
+      }
+
+      .extraction-table th,
+      .extraction-table td {
         white-space: nowrap;
+        border-bottom-color: var(--mat-sys-outline-variant);
       }
 
-      th.mat-header-cell.created_at, td.mat-cell.created_at {
-        min-width: 120px;
-        max-width: 180px;
-      }
-
-      th.mat-header-cell.output, td.mat-cell.output {
-        min-width: 80px;
-        max-width: 120px;
+      .extraction-table th.mat-mdc-header-cell.created_at,
+      .extraction-table td.mat-mdc-cell.created_at {
+        min-width: 110px;
       }
     `
   ]
