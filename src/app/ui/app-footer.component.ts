@@ -6,23 +6,23 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   standalone: true,
   imports: [MatToolbarModule],
   template: `
-    <mat-toolbar color="primary" class="footer">
-      <span style="margin: 0 auto;">© Simon Schulte 2025 | notenspicker[at]gmail.com</span>
+    <mat-toolbar class="footer">
+      <span class="footer-text">© Simon Schulte 2025 &middot; notenspicker[at]gmail.com</span>
     </mat-toolbar>
   `,
   styles: [
     `
       .footer {
-        min-height: 48px;
-        font-size: 0.95rem;
         padding: 0 8px;
+        border-top: 1px solid var(--mat-sys-outline-variant);
+        font-size: 0.85rem;
+        color: var(--mat-sys-on-surface-variant);
       }
 
-      @media (max-width: 600px) {
-        .footer {
-          min-height: 40px;
-          font-size: 0.9rem;
-        }
+      .footer-text {
+        margin: 0 auto;
+        font-family: 'Manrope', system-ui, sans-serif;
+        letter-spacing: 0.01em;
       }
     `
   ]

@@ -1,54 +1,185 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
+// Coffeediary — "Roastery Refined" Material 3 theme.
+// Custom espresso-brown primary + crema/copper tertiary, warm neutrals,
+// Fraunces display + Manrope UI typography, mobile-first component overrides.
 @use '@angular/material' as mat;
+@use './styles/m3-theme' as espresso;
 
 html {
+  color-scheme: light dark;
+
   @include mat.theme((
     color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
+      primary: espresso.$primary-palette,
+      tertiary: espresso.$tertiary-palette,
+      theme-type: light,
     ),
-    typography: Roboto,
+    typography: (
+      plain-family: ('Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif),
+      brand-family: ('Fraunces', Georgia, 'Times New Roman', serif),
+      bold-weight: 600,
+      medium-weight: 500,
+      regular-weight: 400,
+    ),
     density: 0,
   ));
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    @include mat.theme((
+      color: (
+        primary: espresso.$primary-palette,
+        tertiary: espresso.$tertiary-palette,
+        theme-type: dark,
+      ),
+    ));
+  }
+}
+
+:root {
+  // Semantic aliases — prefer these in component styles instead of raw hex.
+  --cd-surface-warm: var(--mat-sys-surface-container-low);
+  --cd-surface-raised: var(--mat-sys-surface-container);
+  --cd-accent-crema: var(--mat-sys-tertiary);
+  --cd-accent-crema-container: var(--mat-sys-tertiary-container);
+  --cd-on-accent-crema: var(--mat-sys-on-tertiary);
+  --cd-outline: var(--mat-sys-outline-variant);
+  --cd-touch-target: 48px;
+  --cd-radius-lg: 20px;
+  --cd-radius-md: 14px;
 }
 
 html, body {
   height: 100%;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow-x: hidden;
 }
 
-.espresso-formfield {
-  margin: 1em;
-  width: 95%;
-}
-
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface, #fafafa);
+  background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-/* You can add global styles to this file, and also import other style files */
 
-// Customize the entire app. Change :root to your selector if you want to scope the styles.
+// Display typography — Fraunces gets its own weight/optical size tuning.
+h1, h2, h3, .mat-mdc-dialog-title,
+.mat-expansion-panel-header .mat-expansion-panel-header-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 50, 'opsz' 24;
+  letter-spacing: -0.01em;
+}
+
+h1 { font-weight: 600; font-size: clamp(1.75rem, 5vw, 2.25rem); margin: 0.5em 0 0.25em; }
+h2 { font-weight: 600; font-size: clamp(1.25rem, 4vw, 1.75rem); margin: 0.5em 0 0.25em; }
+h3 { font-weight: 500; font-size: 1.2rem; margin: 0.5em 0 0.25em; }
+
+// Tabular numerals anywhere we render metrics.
+.cd-num,
+.espresso-value,
+.mat-mdc-cell,
+.mat-mdc-header-cell {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+// Material Symbols Rounded — swap the default Material Icons ligature font.
+mat-icon,
+.mat-icon,
+.material-icons,
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded' !important;
+  font-weight: normal;
+  font-style: normal;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+}
+
+// Espresso form field — full width, comfy mobile margin.
+.espresso-formfield {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+// Mobile-fullscreen dialog panel class.
+.cd-dialog {
+  .mat-mdc-dialog-surface {
+    border-radius: var(--cd-radius-lg);
+  }
+}
+
+@media (max-width: 600px) {
+  .cd-dialog {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh;
+
+    .mat-mdc-dialog-surface {
+      border-radius: 0;
+      min-height: 100vh;
+    }
+
+    .mat-mdc-dialog-actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+      gap: 8px;
+      padding: 12px 16px 20px;
+
+      .mat-mdc-button-base {
+        width: 100%;
+        margin: 0;
+      }
+    }
+  }
+}
+
+// Material component overrides — this is the canonical M3 way to tune shape,
+// density, and touch targets globally without per-component CSS.
 :root {
-  @include mat.toolbar-overrides((
+  @include mat.button-overrides((
+    filled-container-shape: 14px,
+    filled-horizontal-padding: 24px,
+    protected-container-shape: 14px,
+    outlined-container-shape: 14px,
+    text-container-shape: 14px,
+  ));
 
+  @include mat.icon-button-overrides((
+    state-layer-size: 48px,
+  ));
+
+  @include mat.fab-overrides((
+    container-shape: 18px,
+  ));
+
+  @include mat.expansion-overrides((
+    container-shape: 16px,
+    header-collapsed-state-height: 64px,
+    header-expanded-state-height: 64px,
+  ));
+
+  @include mat.form-field-overrides((
+    outlined-outline-color: var(--mat-sys-outline-variant),
+  ));
+
+  @include mat.dialog-overrides((
+    container-shape: 24px,
+  ));
+
+  @include mat.toolbar-overrides((
+    container-background-color: var(--mat-sys-surface-container),
+    container-text-color: var(--mat-sys-on-surface),
+    standard-height: 64px,
+    mobile-height: 56px,
+  ));
+
+  @include mat.card-overrides((
+    elevated-container-shape: 18px,
+    outlined-container-shape: 18px,
   ));
 }

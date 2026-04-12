@@ -6,7 +6,7 @@ import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {RouterLink} from '@angular/router';
 
 import {MatMenuModule} from '@angular/material/menu';
-import {AsyncPipe, NgFor, NgIf} from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {SupabaseAuthService} from '../services/supabase-auth.service';
 import {Observable} from 'rxjs';
 import {User} from '@supabase/supabase-js';
@@ -21,67 +21,69 @@ import {User} from '@supabase/supabase-js';
     MatSnackBarModule,
     RouterLink,
     MatMenuModule,
-    AsyncPipe,
-    NgIf,
-    NgFor
-  ],
+    AsyncPipe
+],
   template: `
-    <mat-toolbar color="primary" class="toolbar">
-      <button mat-icon-button [matMenuTriggerFor]="menu">
+    <mat-toolbar class="toolbar">
+      <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Menü">
         <mat-icon>menu</mat-icon>
       </button>
-      <span class="toolbar-title">Coffee Diary</span>
+      <span class="toolbar-title">
+        <mat-icon class="toolbar-brand-icon">local_cafe</mat-icon>
+        Coffee Diary
+      </span>
       <span class="toolbar-spacer"></span>
       <span class="user-info">
-        <ng-container *ngIf="user$ | async as user; else noUser">
+        @if (user$ | async; as user) {
           <span class="user-name">{{ user.user_metadata?.['full_name'] || user.email }}</span>
-          <button mat-icon-button [matMenuTriggerFor]="userMenu">
-            <ng-container *ngIf="user.user_metadata?.['avatar_url']; else noAvatar">
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Benutzermenü">
+            @if (user.user_metadata?.['avatar_url']) {
               <img class="user-avatar" [src]="user.user_metadata?.['avatar_url']" alt="Avatar" />
-            </ng-container>
-            <ng-template #noAvatar>
+            } @else {
               <mat-icon class="user-avatar">account_circle</mat-icon>
-            </ng-template>
+            }
           </button>
-        </ng-container>
-        <ng-template #noUser>
+        } @else {
           <mat-icon class="user-avatar">account_circle</mat-icon>
-        </ng-template>
+        }
       </span>
     </mat-toolbar>
     <mat-menu #menu="matMenu">
-      <ng-container *ngFor="let link of links; trackBy: trackByPath">
+      @for (link of links; track link.path) {
         <button mat-menu-item [routerLink]="link.path">{{ link.label }}</button>
-      </ng-container>
+      }
     </mat-menu>
     <mat-menu #userMenu="matMenu">
-      <button mat-menu-item (click)="logout()">Abmelden</button>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Abmelden
+      </button>
     </mat-menu>
-  `,
+    `,
   styles: [
     `
       .toolbar {
         padding: 0 8px;
-        min-height: 56px;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
       }
 
       .toolbar-title {
-        font-size: 1.1rem;
-        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 600;
+        font-size: 1.25rem;
+        letter-spacing: -0.01em;
+        color: var(--mat-sys-primary);
+      }
+
+      .toolbar-brand-icon {
+        color: var(--mat-sys-tertiary);
       }
 
       .toolbar-spacer {
         flex: 1 1 auto;
-      }
-
-      @media (max-width: 600px) {
-        .toolbar {
-          flex-wrap: wrap;
-          min-height: 48px;
-        }
-        .toolbar-title {
-          font-size: 1rem;
-        }
       }
 
       .user-info {
@@ -91,8 +93,18 @@ import {User} from '@supabase/supabase-js';
       }
 
       .user-name {
-        font-size: 1rem;
-        font-weight: 400;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface-variant);
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 600px) {
+        .user-name { display: none; }
+        .toolbar-title { font-size: 1.1rem; }
       }
 
       .user-avatar {
@@ -113,17 +125,16 @@ import {User} from '@supabase/supabase-js';
 export class AppToolbar {
   links = [
     { path: '/espressos', label: 'Espresso' },
+    { path: '/espressos/archiv', label: 'Espresso · Archiv' },
     // { path: '/purover', label: 'Pourover' }
+    // { path: '/handbrew', label: 'Handbrew' },
+    // { path: '/handbrew/archiv', label: 'Handbrew · Archiv' },
   ];
 
   user$: Observable<User | null>;
 
   constructor(public auth: SupabaseAuthService) {
     this.user$ = this.auth.user$;
-  }
-
-  trackByPath(index: number, link: { path: string; label: string }) {
-    return link.path;
   }
 
   logout() {

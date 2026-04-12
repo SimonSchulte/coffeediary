@@ -5,23 +5,26 @@ import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {MatCardModule} from '@angular/material/card';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {SnackBarService} from '../services/snack-bar.service';
-import {MatIconButton} from '@angular/material/button';
+import {MatButtonModule, MatIconButton} from '@angular/material/button';
+import {EspressoPull} from '../models/espresso';
 
 @Component({
   selector: 'app-extraction-overview',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton, MatButtonModule],
   template: `
-    <mat-card>
-      <h2>Bezüge Übersicht</h2>
-      <h4>Das Verhältnis
-        <mat-icon>double_arrow</mat-icon>
-        wird automatisch berechnet
-      </h4>
-      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2">
+    <mat-card appearance="outlined" class="extraction-card">
+      <div class="extraction-header">
+        <button mat-icon-button (click)="goBack()" aria-label="Zurück">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Bezüge</h2>
+      </div>
+      <div class="table-scroll">
+      <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z0 extraction-table">
         <!-- Datum Column -->
         <ng-container matColumnDef="created_at">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>
@@ -71,7 +74,7 @@ import {MatIconButton} from '@angular/material/button';
             <mat-icon>publish</mat-icon>
           </th>
           <td mat-cell *matCellDef="let element">
-            <button mat-icon-button color="primary" (click)="publishExtraction(element)">
+            <button mat-icon-button (click)="publishExtraction(element)" aria-label="Als Standardrezept übernehmen">
               <mat-icon>publish</mat-icon>
             </button>
           </td>
@@ -80,59 +83,86 @@ import {MatIconButton} from '@angular/material/button';
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
-      <mat-paginator [pageSize]="10"></mat-paginator>
+      </div>
+      <mat-paginator [pageSize]="15" [hidePageSize]="true"></mat-paginator>
     </mat-card>
   `,
   styles: [
     `
-      mat-card {
-        margin: 24px;
+      .extraction-card {
+        margin: 16px;
         padding: 16px;
+        background: var(--mat-sys-surface-container-low);
       }
 
-      table {
+      @media (min-width: 600px) {
+        .extraction-card {
+          margin: 24px auto;
+          max-width: 960px;
+        }
+      }
+
+      .extraction-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: -8px 0 8px -8px;
+      }
+
+      .extraction-header h2 {
+        margin: 0;
+      }
+
+      .table-scroll {
         width: 100%;
-        margin-bottom: 16px;
-        max-width: 100%;
-        box-sizing: border-box;
-        display: block;
         overflow-x: auto;
+        margin-bottom: 12px;
+        mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 0%, black 92%, transparent 100%);
       }
 
-      .mat-elevation-z2 {
+      .extraction-table {
         width: 100%;
-        box-sizing: border-box;
+        background: transparent;
+        font-variant-numeric: tabular-nums;
+        font-size: 0.85rem;
       }
 
-      th, td {
-        word-break: break-word;
+      .extraction-table .mat-mdc-header-cell {
+        color: var(--mat-sys-on-surface-variant);
       }
 
-      th.mat-header-cell, td.mat-cell {
+      .extraction-table .mat-mdc-header-cell mat-icon {
+        color: var(--mat-sys-tertiary);
+      }
+
+      .extraction-table th,
+      .extraction-table td {
         white-space: nowrap;
+        border-bottom-color: var(--mat-sys-outline-variant);
       }
 
-      th.mat-header-cell.created_at, td.mat-cell.created_at {
-        min-width: 120px;
-        max-width: 180px;
-      }
-
-      th.mat-header-cell.output, td.mat-cell.output {
-        min-width: 80px;
-        max-width: 120px;
+      .extraction-table th.mat-mdc-header-cell.created_at,
+      .extraction-table td.mat-mdc-cell.created_at {
+        min-width: 110px;
       }
     `
   ]
 })
 export class ExtractionOverviewComponent implements OnInit {
   displayedColumns: string[] = ['created_at', 'grinder_setting', 'gramms', 'runtime', 'ratio', 'output', 'publish'];
-  dataSource = new MatTableDataSource<any>([]);
+  dataSource = new MatTableDataSource<EspressoPull>([]);
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(private espressos: SupabaseEspressosService,
               private route: ActivatedRoute,
+              private router: Router,
               private cdr: ChangeDetectorRef,
               private snackBar: SnackBarService) {
+  }
+
+  goBack(): void {
+    this.router.navigate(['/espressos']);
   }
 
   async ngOnInit() {
@@ -145,17 +175,15 @@ export class ExtractionOverviewComponent implements OnInit {
     });
   }
 
-  async publishExtraction(element: any): Promise<void> {
+  async publishExtraction(element: EspressoPull): Promise<void> {
     try {
-      await this.espressos.updateDefaultReceipt(element.espresso_id, {
+      await this.espressos.updateDefaultRecipe(element.espresso_id, {
         gramms: element.gramms,
-        ratio: (element.output / element.gramms),
+        ratio: element.output / element.gramms,
         grinder_setting: element.grinder_setting,
-        runtime: element.runtime
-      }).then(value => {
-
-        this.snackBar.open('Espresso erfolgreich aktualisiert!');
+        runtime: element.runtime,
       });
+      this.snackBar.open('Espresso erfolgreich aktualisiert!');
     } catch (err) {
       this.snackBar.open('Fehler beim Aktualisieren des Espressos!');
     }
