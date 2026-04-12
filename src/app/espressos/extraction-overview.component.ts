@@ -5,23 +5,24 @@ import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {MatCardModule} from '@angular/material/card';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {SnackBarService} from '../services/snack-bar.service';
-import {MatIconButton} from '@angular/material/button';
+import {MatButtonModule, MatIconButton} from '@angular/material/button';
 import {EspressoPull} from '../models/espresso';
 
 @Component({
   selector: 'app-extraction-overview',
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton],
+  imports: [CommonModule, MatTableModule, MatPaginatorModule, MatSortModule, MatCardModule, MatIconModule, MatIconButton, MatButtonModule],
   template: `
     <mat-card appearance="outlined" class="extraction-card">
-      <h2>Bezüge Übersicht</h2>
-      <h4 class="extraction-hint">Das Verhältnis
-        <mat-icon>double_arrow</mat-icon>
-        wird automatisch berechnet
-      </h4>
+      <div class="extraction-header">
+        <button mat-icon-button (click)="goBack()" aria-label="Zurück">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <h2>Bezüge</h2>
+      </div>
       <div class="table-scroll">
       <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z0 extraction-table">
         <!-- Datum Column -->
@@ -83,7 +84,7 @@ import {EspressoPull} from '../models/espresso';
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
       </div>
-      <mat-paginator [pageSize]="10"></mat-paginator>
+      <mat-paginator [pageSize]="15" [hidePageSize]="true"></mat-paginator>
     </mat-card>
   `,
   styles: [
@@ -101,24 +102,15 @@ import {EspressoPull} from '../models/espresso';
         }
       }
 
-      h2 {
-        margin-top: 0;
-      }
-
-      .extraction-hint {
+      .extraction-header {
         display: flex;
         align-items: center;
-        gap: 6px;
-        color: var(--mat-sys-on-surface-variant);
-        font-weight: 400;
-        margin: 0 0 12px;
+        gap: 4px;
+        margin: -8px 0 8px -8px;
       }
 
-      .extraction-hint mat-icon {
-        color: var(--mat-sys-tertiary);
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
+      .extraction-header h2 {
+        margin: 0;
       }
 
       .table-scroll {
@@ -133,6 +125,7 @@ import {EspressoPull} from '../models/espresso';
         width: 100%;
         background: transparent;
         font-variant-numeric: tabular-nums;
+        font-size: 0.85rem;
       }
 
       .extraction-table .mat-mdc-header-cell {
@@ -163,8 +156,13 @@ export class ExtractionOverviewComponent implements OnInit {
 
   constructor(private espressos: SupabaseEspressosService,
               private route: ActivatedRoute,
+              private router: Router,
               private cdr: ChangeDetectorRef,
               private snackBar: SnackBarService) {
+  }
+
+  goBack(): void {
+    this.router.navigate(['/espressos']);
   }
 
   async ngOnInit() {

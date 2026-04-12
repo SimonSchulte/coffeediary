@@ -6,6 +6,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatIconModule} from '@angular/material/icon';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatTableModule} from '@angular/material/table';
+import {MatMenuModule} from '@angular/material/menu';
 
 import {
   MatDialog
@@ -13,6 +14,7 @@ import {
 import {MatButtonModule} from '@angular/material/button';
 import NewEspressoDialog from './new-espresso-dialog.component';
 import NewExtractionDialogComponent, {NewExtractionDialogData} from './new-extraction-dialog.component';
+import EditEspressoDialogComponent, {EditEspressoDialogData} from './edit-espresso-dialog.component';
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 import {Espresso} from '../models/espresso';
 import { Router } from '@angular/router';
@@ -20,12 +22,11 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-espressos',
   standalone: true,
-  imports: [MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule],
+  imports: [MatCardModule, MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatExpansionModule, MatTableModule, MatMenuModule],
   template: `
     <section class="espresso-section">
       <header class="espresso-section-header">
         <h2>Espressos</h2>
-        <p class="espresso-section-sub">Dein Tagebuch an geröstetem Glück.</p>
       </header>
 
       @if (loading) {
@@ -39,52 +40,68 @@ import { Router } from '@angular/router';
             <mat-expansion-panel class="espresso" (opened)="onPanelOpened(e.id)" (closed)="onPanelClosed(e.id)">
               <mat-expansion-panel-header>
                 <mat-panel-title>{{ e.name }}</mat-panel-title>
-                <mat-panel-description>
-                  {{ e.vendor }}
+                <mat-panel-description class="espresso-header-desc">
+                  <span class="espresso-vendor">{{ e.vendor }}</span>
+                  <span class="espresso-pull-badge">
+                    <mat-icon class="pull-badge-icon">local_cafe</mat-icon>
+                    {{ e.espresso_pulls?.length || 0 }}
+                  </span>
                 </mat-panel-description>
               </mat-expansion-panel-header>
+
               <div class="espresso-details">
-                <table mat-table [dataSource]="[
-                      {icon: 'settings', desc: 'Mahlgrad', value: e.grinder_setting},
-                      {icon: 'scale', desc: 'Bohnen', value: e.gramms + 'g'},
-                      {icon: 'timer', desc: 'Bezug', value: e.runtime + 's'},
-                      {icon: 'double_arrow', desc: 'Verhältnis', value: '1:' + (typeof e.ratio === 'number' ? e.ratio.toFixed(1) : e.ratio)},
-                      {icon: 'output', desc: 'Output', value: (typeof e.gramms === 'number' && typeof e.ratio === 'number' ? (e.gramms * e.ratio).toFixed(0) : (e.gramms * e.ratio)) + 'g'}
-                    ]" class="mat-elevation-z0 espresso-table">
-                  <!-- Icon Column -->
-                  <ng-container matColumnDef="icon">
-                    <td mat-cell *matCellDef="let element">
-                      <mat-icon class="espresso-icon">{{ element.icon }}</mat-icon>
-                    </td>
-                  </ng-container>
-                  <!-- Description Column -->
-                  <ng-container matColumnDef="desc">
-                    <td mat-cell *matCellDef="let element">
-                      {{ element.desc }}
-                    </td>
-                  </ng-container>
-                  <!-- Value Column -->
-                  <ng-container matColumnDef="value">
-                    <td mat-cell *matCellDef="let element">
-                      <span class="espresso-value">{{ element.value }}</span>
-                    </td>
-                  </ng-container>
-                  <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
-                </table>
+                <div class="espresso-metrics">
+                  <div class="metric">
+                    <mat-icon>settings</mat-icon>
+                    <span>{{ e.grinder_setting }}</span>
+                    <label>Mahlgrad</label>
+                  </div>
+                  <div class="metric">
+                    <mat-icon>scale</mat-icon>
+                    <span>{{ e.gramms }}g</span>
+                    <label>Bohnen</label>
+                  </div>
+                  <div class="metric">
+                    <mat-icon>timer</mat-icon>
+                    <span>{{ e.runtime }}s</span>
+                    <label>Bezug</label>
+                  </div>
+                  <div class="metric">
+                    <mat-icon>double_arrow</mat-icon>
+                    <span>1:{{ (typeof e.ratio === 'number' ? e.ratio.toFixed(1) : e.ratio) }}</span>
+                    <label>Ratio</label>
+                  </div>
+                  <div class="metric">
+                    <mat-icon>output</mat-icon>
+                    <span>{{ (typeof e.gramms === 'number' && typeof e.ratio === 'number' ? (e.gramms * e.ratio).toFixed(0) : e.gramms * e.ratio) }}g</span>
+                    <label>Output</label>
+                  </div>
+                </div>
 
                 <div class="espresso-actions">
-                  <button mat-flat-button color="primary" class="espresso-action-cta" (click)="openExtractionDialog(e)">
+                  <button mat-flat-button class="espresso-action-cta" (click)="openExtractionDialog(e)">
                     <mat-icon>add_circle</mat-icon>
-                    Bezug erfassen
+                    Bezug
                   </button>
-                  <button mat-button class="espresso-action-secondary" (click)="goToExtractions(e)">
-                    <mat-icon>local_cafe</mat-icon>
-                    {{e.espresso_pulls?.length || 0}} Bezüge
-                  </button>
-                  <button mat-button class="espresso-action-secondary" (click)="archiveEspresso(e)">
-                    <mat-icon>archive</mat-icon>
-                    Archivieren
-                  </button>
+                  <div class="espresso-secondary-row">
+                    <button mat-button class="espresso-action-secondary" (click)="goToExtractions(e)">
+                      <mat-icon>local_cafe</mat-icon>
+                      {{ e.espresso_pulls?.length || 0 }} Bezüge
+                    </button>
+                    <button mat-icon-button class="espresso-action-more" [matMenuTriggerFor]="moreMenu" (click)="$event.stopPropagation()" aria-label="Weitere Aktionen">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #moreMenu="matMenu">
+                      <button mat-menu-item (click)="editEspresso(e)">
+                        <mat-icon>edit</mat-icon>
+                        Umbenennen
+                      </button>
+                      <button mat-menu-item (click)="archiveEspresso(e)">
+                        <mat-icon>archive</mat-icon>
+                        Archivieren
+                      </button>
+                    </mat-menu>
+                  </div>
                 </div>
               </div>
 
@@ -120,18 +137,12 @@ import { Router } from '@angular/router';
       }
 
       .espresso-section-header {
-        padding: 8px 4px 16px;
+        padding: 4px 4px 10px;
       }
 
       .espresso-section-header h2 {
         margin: 0;
         color: var(--mat-sys-on-surface);
-      }
-
-      .espresso-section-sub {
-        margin: 4px 0 0;
-        color: var(--mat-sys-on-surface-variant);
-        font-size: 0.95rem;
       }
 
       .espresso-loading {
@@ -153,61 +164,121 @@ import { Router } from '@angular/router';
         background: var(--mat-sys-surface-container-low);
       }
 
+      .espresso-header-desc {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      .espresso-vendor {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .espresso-pull-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--mat-sys-tertiary);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .pull-badge-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+      }
+
       .espresso-details {
-        padding: 8px 4px 4px;
+        padding: 12px 4px 4px;
         border-left: 3px solid var(--cd-accent-crema);
         margin-left: 4px;
       }
 
-      .espresso-table {
-        width: 100%;
-        background: transparent;
+      /* Kompakte Metriken-Zeile — Grid: alle 5 Kacheln immer sichtbar */
+      .espresso-metrics {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+        margin-bottom: 10px;
       }
 
-      .espresso-table td.mat-mdc-cell {
-        border-bottom-color: var(--cd-outline);
-        padding: 10px 8px;
+      .metric {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        background: var(--mat-sys-surface-container);
+        border-radius: 10px;
+        padding: 6px 4px;
       }
 
-      .espresso-icon {
+      .metric mat-icon {
         color: var(--mat-sys-tertiary);
-        vertical-align: middle;
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
       }
 
-      .espresso-value {
-        font-weight: 600;
-        font-size: 1.05em;
+      .metric span {
+        font-weight: 700;
+        font-size: 0.95rem;
         font-variant-numeric: tabular-nums;
         color: var(--mat-sys-on-surface);
+        white-space: nowrap;
+      }
+
+      .metric label {
+        font-size: 0.6rem;
+        color: var(--mat-sys-on-surface-variant);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
       }
 
       .espresso-actions {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-top: 16px;
-        padding: 0 4px 4px;
+        gap: 8px;
+        padding: 0 0 4px;
       }
 
       .espresso-action-cta {
         width: 100%;
-        height: 48px;
+        height: 44px;
+        white-space: nowrap;
+        --mdc-filled-button-container-color: var(--mat-sys-tertiary-container);
+        --mdc-filled-button-label-text-color: var(--mat-sys-on-tertiary-container);
+      }
+
+      .espresso-secondary-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
       }
 
       .espresso-action-secondary {
-        width: 100%;
-        height: 44px;
+        flex: 1;
+        height: 40px;
         color: var(--mat-sys-on-surface-variant);
+        white-space: nowrap;
       }
 
-      @media (min-width: 600px) {
-        .espresso-actions {
-          flex-direction: row;
-        }
-        .espresso-action-cta,
-        .espresso-action-secondary {
-          flex: 1 1 auto;
-        }
+      .espresso-action-more {
+        color: var(--mat-sys-on-surface-variant);
+        flex-shrink: 0;
       }
 
       .espresso-empty {
@@ -241,7 +312,7 @@ import { Router } from '@angular/router';
 
       @media (max-width: 600px) {
         .espresso-section {
-          padding: 12px 12px 110px;
+          padding: 8px 8px 110px;
         }
         .cd-fab {
           right: 16px;
@@ -318,6 +389,19 @@ export class EspressosComponent implements OnInit {
   goToExtractions(e: Espresso): void {
     // Navigiert zur ExtractionOverview-Seite mit Espresso-ID als Parameter
     this.router.navigate(['/extractions'], {queryParams: {espressoId: e.id}});
+  }
+
+  editEspresso(e: Espresso): void {
+    const data: EditEspressoDialogData = {id: e.id, name: e.name, vendor: e.vendor};
+    this.dialog.open(EditEspressoDialogComponent, {
+      data,
+      panelClass: 'cd-dialog',
+      autoFocus: 'first-tabbable',
+      maxWidth: '95vw',
+      width: '480px',
+    }).afterClosed().subscribe(async (saved) => {
+      if (saved) await this.extractEspressos();
+    });
   }
 
   async archiveEspresso(e: Espresso): Promise<void> {

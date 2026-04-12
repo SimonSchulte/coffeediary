@@ -26,29 +26,40 @@ export interface NewExtractionDialogResult {
   standalone: true,
   imports: [FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatIconModule, MatDialogContent, MatDialogActions],
   template: `
-    <h2 mat-dialog-title>Bezug erfassen &mdash; Wie lief's?</h2>
+    <h2 mat-dialog-title>Bezug erfassen</h2>
     <mat-dialog-content class="cd-dialog-content">
       <form #extractionForm="ngForm" (ngSubmit)="onSubmit()">
-        <mat-form-field class="espresso-formfield" appearance="outline">
-          <mat-label>Bezug (Sekunden)</mat-label>
-          <input matInput type="number" inputmode="numeric" name="runtime" [(ngModel)]="runtime" required>
-          <mat-icon matSuffix>timer</mat-icon>
-        </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="outline">
-          <mat-label>Output (g)</mat-label>
-          <input matInput type="number" inputmode="decimal" name="output" [(ngModel)]="output" required>
-          <mat-icon matSuffix>output</mat-icon>
-        </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="outline">
-          <mat-label>Mahlgrad</mat-label>
-          <input matInput type="number" inputmode="decimal" name="grinder_setting" [(ngModel)]="grinder_setting" required>
-          <mat-icon matSuffix>settings</mat-icon>
-        </mat-form-field>
-        <mat-form-field class="espresso-formfield" appearance="outline">
-          <mat-label>Bohnen (g)</mat-label>
-          <input matInput type="number" inputmode="decimal" name="gramms" [(ngModel)]="gramms" required>
-          <mat-icon matSuffix>scale</mat-icon>
-        </mat-form-field>
+        <div class="field-row">
+          <mat-form-field class="espresso-formfield" appearance="outline">
+            <mat-label>Bezug (s)</mat-label>
+            <input matInput type="number" inputmode="numeric" name="runtime" [(ngModel)]="runtime" required placeholder="28">
+            <mat-icon matSuffix>timer</mat-icon>
+          </mat-form-field>
+          <mat-form-field class="espresso-formfield" appearance="outline">
+            <mat-label>Output (g)</mat-label>
+            <input matInput type="number" inputmode="decimal" name="output" [(ngModel)]="output" required placeholder="36">
+            <mat-icon matSuffix>output</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="field-row">
+          <mat-form-field class="espresso-formfield" appearance="outline">
+            <mat-label>Mahlgrad</mat-label>
+            <input matInput type="number" inputmode="decimal" name="grinder_setting" [(ngModel)]="grinder_setting" required>
+            <mat-icon matSuffix>settings</mat-icon>
+          </mat-form-field>
+          <mat-form-field class="espresso-formfield" appearance="outline">
+            <mat-label>Bohnen (g)</mat-label>
+            <input matInput type="number" inputmode="decimal" name="gramms" [(ngModel)]="gramms" required>
+            <mat-icon matSuffix>scale</mat-icon>
+          </mat-form-field>
+        </div>
+        @if (liveRatio !== null) {
+          <div class="ratio-preview" [class.ratio-good]="isRatioGood" [class.ratio-warn]="!isRatioGood">
+            <mat-icon>double_arrow</mat-icon>
+            <span>Ratio: 1:{{ liveRatio }}</span>
+            <mat-icon class="ratio-status">{{ isRatioGood ? 'check_circle' : 'info' }}</mat-icon>
+          </div>
+        }
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -70,7 +81,50 @@ export interface NewExtractionDialogResult {
       form {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 0;
+      }
+
+      .field-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .field-row .espresso-formfield {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .ratio-preview {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 4px;
+        transition: background 0.2s, color 0.2s;
+      }
+
+      .ratio-preview mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      .ratio-preview .ratio-status {
+        margin-left: auto;
+      }
+
+      .ratio-good {
+        background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
+        color: var(--mat-sys-tertiary);
+      }
+
+      .ratio-warn {
+        background: color-mix(in srgb, var(--mat-sys-error) 10%, transparent);
+        color: var(--mat-sys-error);
       }
     `
   ]
@@ -81,6 +135,18 @@ export default class NewExtractionDialogComponent {
   grinder_setting: number | null;
   gramms: number | null;
   espressoId: number;
+
+  get liveRatio(): string | null {
+    if (this.output != null && this.gramms != null && this.gramms > 0) {
+      return (this.output / this.gramms).toFixed(2);
+    }
+    return null;
+  }
+
+  get isRatioGood(): boolean {
+    const r = this.liveRatio !== null ? parseFloat(this.liveRatio) : null;
+    return r !== null && r >= 1.8 && r <= 2.5;
+  }
 
   constructor(
     private dialogRef: MatDialogRef<NewExtractionDialogComponent, NewExtractionDialogResult>,

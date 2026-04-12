@@ -12,7 +12,13 @@
       "Bash(grep:*)",
       "Bash(npx -y ng generate @angular/material:m3-theme --primary-color=\"#6F4E37\" --tertiary-color=\"#C68B59\" --directory=\"src/styles\")",
       "mcp__plugin_supabase_supabase__list_projects",
-      "mcp__plugin_supabase_supabase__apply_migration"
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_type"
     ]
   }
 }
