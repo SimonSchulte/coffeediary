@@ -20,7 +20,7 @@ export class SupabaseEspressosService {
   }
 
   async getAll(): Promise<Espresso[]> {
-    // Hole alle aktiven (nicht archivierten) Espressos inkl. aller zugehörigen espresso_pull Einträge
+    // Hole alle aktiven (nicht archivierten) Espressi inkl. aller zugehörigen espresso_pull Einträge
     const {data, error} = await this.supabase
       .from(this.table)
       .select('*, espresso_pulls(*)')

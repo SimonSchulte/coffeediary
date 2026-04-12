@@ -1,29 +1,25 @@
 import {Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy, inject} from '@angular/core';
 
-import {MatCardModule} from '@angular/material/card';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatIconModule} from '@angular/material/icon';
 import {MatExpansionModule} from '@angular/material/expansion';
-import {MatTableModule} from '@angular/material/table';
 import {MatButtonModule} from '@angular/material/button';
-import {MatChipsModule} from '@angular/material/chips';
 
 import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
 import {SnackBarService} from '../services/snack-bar.service';
 import {Espresso} from '../models/espresso';
+import {EspressoCardComponent} from './espresso-card.component';
 
 @Component({
   selector: 'app-espresso-archiv',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
     MatButtonModule,
     MatExpansionModule,
-    MatTableModule,
-    MatChipsModule,
+    EspressoCardComponent,
   ],
   template: `
     <section class="espresso-section">
@@ -32,7 +28,7 @@ import {Espresso} from '../models/espresso';
           <mat-icon class="archiv-header-icon">inventory_2</mat-icon>
           <h2>Archiv</h2>
         </div>
-        <p class="espresso-section-sub">Archivierte Espressos – nicht mehr aktiv.</p>
+        <p class="espresso-section-sub">Archivierte Espressi – nicht mehr aktiv.</p>
       </header>
 
       @if (loading) {
@@ -43,58 +39,18 @@ import {Espresso} from '../models/espresso';
       } @else {
         <mat-accordion class="espresso-accordion">
           @for (e of espressosList; track e.id) {
-            <mat-expansion-panel class="espresso espresso--archived">
-              <mat-expansion-panel-header>
-                <mat-panel-title>{{ e.name }}</mat-panel-title>
-                <mat-panel-description class="archiv-panel-description">
-                  <span>{{ e.vendor }}</span>
-                  <mat-chip-set class="archiv-badge">
-                    <mat-chip>
-                      <mat-icon matChipAvatar>inventory_2</mat-icon>
-                      Archiviert
-                    </mat-chip>
-                  </mat-chip-set>
-                </mat-panel-description>
-              </mat-expansion-panel-header>
-              <div class="espresso-details">
-                <table mat-table [dataSource]="[
-                      {icon: 'settings', desc: 'Mahlgrad', value: e.grinder_setting},
-                      {icon: 'scale', desc: 'Bohnen', value: e.gramms + 'g'},
-                      {icon: 'timer', desc: 'Bezug', value: e.runtime + 's'},
-                      {icon: 'double_arrow', desc: 'Verhältnis', value: '1:' + (typeof e.ratio === 'number' ? e.ratio.toFixed(1) : e.ratio)},
-                      {icon: 'output', desc: 'Output', value: (typeof e.gramms === 'number' && typeof e.ratio === 'number' ? (e.gramms * e.ratio).toFixed(0) : (e.gramms * e.ratio)) + 'g'}
-                    ]" class="mat-elevation-z0 espresso-table">
-                  <ng-container matColumnDef="icon">
-                    <td mat-cell *matCellDef="let element">
-                      <mat-icon class="espresso-icon">{{ element.icon }}</mat-icon>
-                    </td>
-                  </ng-container>
-                  <ng-container matColumnDef="desc">
-                    <td mat-cell *matCellDef="let element">{{ element.desc }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="value">
-                    <td mat-cell *matCellDef="let element">
-                      <span class="espresso-value">{{ element.value }}</span>
-                    </td>
-                  </ng-container>
-                  <tr mat-row *matRowDef="let row; columns: ['icon', 'desc', 'value'];"></tr>
-                </table>
-
-                <div class="espresso-actions">
-                  <button mat-flat-button color="primary" class="espresso-action-cta" (click)="restoreEspresso(e)">
-                    <mat-icon>unarchive</mat-icon>
-                    Wiederherstellen
-                  </button>
-                </div>
-              </div>
-            </mat-expansion-panel>
+            <app-espresso-card
+              [espresso]="e"
+              [archived]="true"
+              [showPullCount]="false"
+              (restore)="restoreEspresso($event)" />
           }
         </mat-accordion>
 
         @if (espressosList.length === 0) {
           <div class="espresso-empty">
             <mat-icon class="espresso-empty-icon">inventory_2</mat-icon>
-            <p>Keine archivierten Espressos.</p>
+            <p>Keine archivierten Espressi.</p>
           </div>
         }
       }
@@ -150,76 +106,6 @@ import {Espresso} from '../models/espresso';
         display: block;
       }
 
-      .espresso {
-        margin-bottom: 10px;
-        background: var(--mat-sys-surface-container-low);
-      }
-
-      .espresso--archived {
-        opacity: 0.82;
-      }
-
-      .archiv-panel-description {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .archiv-badge {
-        pointer-events: none;
-      }
-
-      .espresso-details {
-        padding: 8px 4px 4px;
-        border-left: 3px solid var(--mat-sys-outline-variant);
-        margin-left: 4px;
-      }
-
-      .espresso-table {
-        width: 100%;
-        background: transparent;
-      }
-
-      .espresso-table td.mat-mdc-cell {
-        border-bottom-color: var(--cd-outline);
-        padding: 10px 8px;
-      }
-
-      .espresso-icon {
-        color: var(--mat-sys-on-surface-variant);
-        vertical-align: middle;
-      }
-
-      .espresso-value {
-        font-weight: 600;
-        font-size: 1.05em;
-        font-variant-numeric: tabular-nums;
-        color: var(--mat-sys-on-surface);
-      }
-
-      .espresso-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 16px;
-        padding: 0 4px 4px;
-      }
-
-      .espresso-action-cta {
-        width: 100%;
-        height: 48px;
-      }
-
-      @media (min-width: 600px) {
-        .espresso-actions {
-          flex-direction: row;
-        }
-        .espresso-action-cta {
-          flex: 1 1 auto;
-        }
-      }
-
       .espresso-empty {
         display: flex;
         flex-direction: column;
@@ -242,8 +128,8 @@ import {Espresso} from '../models/espresso';
           padding: 12px 12px 32px;
         }
       }
-    `
-  ]
+    `,
+  ],
 })
 export class EspressoArchivComponent implements OnInit {
   espressosList: Espresso[] = [];

@@ -17,7 +17,7 @@ import {AppFooter} from './ui/app-footer.component';
         <div class="auth-block">
           <mat-icon class="auth-icon">lock</mat-icon>
           <h2>Login erforderlich</h2>
-          <p class="auth-sub">Melde dich an, um deine Espressos zu protokollieren.</p>
+          <p class="auth-sub">Melde dich an, um deine Espressi zu protokollieren.</p>
           <button mat-flat-button color="primary" class="auth-button" (click)="login()">
             <mat-icon>login</mat-icon>
             Mit Google anmelden
