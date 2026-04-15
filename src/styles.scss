@@ -106,6 +106,15 @@ mat-icon,
   margin: 0.5rem 0;
 }
 
+// Fix: Suffix/Prefix-Icons in MDC-Form-Fields werden durch line-height: 0 (vom
+// Angular-Material-Wrapper vererbt) abgeschnitten – der Glyph-Ascender ragt dann
+// außerhalb des overflow:hidden-Containers. Material Symbols Rounded hat andere
+// Metriken als Material Icons, weshalb der Bug nur mit diesem Font auftritt.
+.mat-mdc-form-field-icon-suffix mat-icon,
+.mat-mdc-form-field-icon-prefix mat-icon {
+  line-height: 24px;
+}
+
 // Mobile-fullscreen dialog panel class.
 .cd-dialog {
   .mat-mdc-dialog-surface {
