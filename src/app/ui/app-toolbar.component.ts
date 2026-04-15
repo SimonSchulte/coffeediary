@@ -124,11 +124,11 @@ import {User} from '@supabase/supabase-js';
 })
 export class AppToolbar {
   links = [
-    { path: '/espressos', label: 'Espresso' },
-    { path: '/espressos/archiv', label: 'Espresso · Archiv' },
-    // { path: '/purover', label: 'Pourover' }
-    // { path: '/handbrew', label: 'Handbrew' },
-    // { path: '/handbrew/archiv', label: 'Handbrew · Archiv' },
+    {path: '/', label: 'Home'},
+    {path: '/espressos', label: 'Espresso'},
+    {path: '/espressos/archiv', label: 'Espresso · Archiv'},
+    {path: '/handbrews', label: 'Handbrews'},
+    {path: '/handbrews/archiv', label: 'Handbrews · Archiv'},
   ];
 
   user$: Observable<User | null>;
