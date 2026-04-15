@@ -1,0 +1,1 @@
+import{a as c}from"./chunk-GBKNMF27.js";import{W as o,_ as n}from"./chunk-PQPS3X6Q.js";var i=class a{constructor(t){this.snackBar=t}open(t,r=3e3){this.snackBar.open(t,"OK",{duration:r})}static \u0275fac=function(r){return new(r||a)(n(c))};static \u0275prov=o({token:a,factory:a.\u0275fac,providedIn:"root"})};export{i as a};
