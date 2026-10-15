@@ -4,6 +4,21 @@ Ziel: Coffeediary vollständig auf den eigenen Cloudflare-Account umziehen, **Su
 und **GitHub Pages** (Hosting) ablösen und dabei die Basis für eine **Android-App (Capacitor)** mit Fotos und
 einer Café-Sammlung legen.
 
+## Status (2026-10-15)
+
+| Schritt | Stand |
+| --- | --- |
+| Lese-Leck `espresso_pulls` in Supabase | ✅ Read-Policy auf `authenticated` eingeschränkt |
+| Phase 1 – D1 `coffeediary` + Schema | ✅ angelegt (WEUR), `migrations/0001_init.sql` angewendet und in `d1_migrations` vermerkt |
+| Phase 2 – Daten | ✅ Erstimport (6/9/2/1 Zeilen + 3 Nutzer), Zeilenzahlen geprüft. **Beim Cutover neu importieren** (vorher Tabellen leeren), falls in Supabase noch etwas erfasst wurde |
+| Phase 3 – Worker (`worker/`, `wrangler.jsonc`) | ✅ implementiert, lokal mit `wrangler dev` getestet (CRUD, Cascade, Constraints → 400, Auth/Allow-List, CORS, Origin-Check) – **noch nicht deployt** |
+| Phase 4 – Angular umbauen | ⏳ offen |
+| Phase 5 – `GOOGLE_CLIENT_ID` eintragen, `SESSION_SECRET` setzen, Deploy | ⏳ offen |
+
+Lokal entwickeln: `.dev.vars` mit `SESSION_SECRET=<≥32 Zeichen>` anlegen (optional `DEV_USER_EMAIL=<freigeschaltete
+Adresse>` zum Überspringen des Logins), `npx wrangler d1 migrations apply coffeediary --local`, `npm run build`,
+`npm run dev:api`.
+
 ## 1. Ausgangslage (Ist-Zustand)
 
 | Bereich       | Heute                                                                                    |

@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "dev:api": "wrangler dev",
+    "deploy": "ng build && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply coffeediary --remote",
+    "typecheck:worker": "tsc -p worker/tsconfig.json"
   },
   "prettier": {
     "printWidth": 100,
@@ -32,6 +36,7 @@
     "@angular/platform-browser": "^21.2.7",
     "@angular/router": "^21.2.7",
     "@supabase/supabase-js": "^2.81.1",
+    "jose": "^6.2.12",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -39,6 +44,7 @@
     "@angular/build": "^21.2.6",
     "@angular/cli": "^21.2.6",
     "@angular/compiler-cli": "^21.2.7",
+    "@cloudflare/workers-types": "^5.20261015.1",
     "@types/jasmine": "~5.1.0",
     "angular-cli-ghpages": "^3.0.2",
     "jasmine-core": "~5.9.0",
@@ -47,6 +53,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "^2.2.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.151.0"
   }
 }
