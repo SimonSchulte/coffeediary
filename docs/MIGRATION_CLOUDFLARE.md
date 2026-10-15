@@ -70,18 +70,50 @@ Für Coffeediary existieren noch keine Ressourcen.
 
 ## 3. Offene Punkte vor dem Start
 
-1. **Supabase-Schema verifizieren** (Spaltentypen, Defaults, `ON DELETE`-Verhalten, evtl. `user_id`-Spalten,
-   RLS-Policies) – im Supabase Dashboard oder per `pg_dump --schema-only`. Die Supabase-MCP-Verbindung war bei
-   der Planerstellung nicht erreichbar.
-2. **Gemeinsame oder getrennte Daten?** Die Models enthalten kein `user_id`. Teilen sich alle freigeschalteten
-   Nutzer ein Tagebuch, bleibt das so. Sollen Daten pro Nutzer getrennt sein, bekommen die Kopf-Tabellen eine
-   Spalte `owner_email` (siehe Phase 1). Spätestens bei Cafés/Fotos sollte das entschieden sein.
+1. ~~Supabase-Schema verifizieren~~ **erledigt (Stand 2026-10-15)**, Ergebnis siehe Abschnitt 3a.
+2. ~~Gemeinsame oder getrennte Daten?~~ **geklärt: gemeinsam.** Es gibt keine `user_id`-Spalten; alle RLS-Policies
+   erlauben jedem angemeldeten Nutzer alles (`USING true`). Das bleibt so – Zugriff steuert allein die
+   Allow-List in `users`. Eine Trennung pro Nutzer (`owner_email`) kann später nachgerüstet werden.
 3. ~~Domain~~ **entschieden**: Start auf `https://coffeediary.<sub>.workers.dev` (`<sub>` = workers.dev-Subdomain
    des Accounts, siehe *Workers & Pages → Übersicht*). Eine eigene Domain kann später ergänzt werden – dann
    API-Basis-URL der App, `ALLOWED_ORIGINS` und die *Authorized JavaScript origins* im Google-Client anpassen.
    Deshalb die URL nirgends hart codieren, sondern zentral konfigurieren.
 4. **Google-OAuth-Client-ID** aus der Google Cloud Console heraussuchen (ist heute im Supabase-Dashboard unter
    *Authentication → Providers → Google* hinterlegt).
+
+## 3a. Befund aus Supabase (2026-10-15)
+
+Das Projekt war im Free Tier **pausiert** und wurde für die Analyse wiederhergestellt. Free-Projekte pausieren nach
+ca. 7 Tagen Inaktivität erneut – den Daten-Export (Phase 2) daher zeitnah ziehen.
+
+**Datenmenge** (sehr klein, Migration per Skript trivial):
+
+| Tabelle          | Zeilen |
+| ---------------- | ------ |
+| `espressos`      | 6      |
+| `espresso_pulls` | 9      |
+| `handbrews`      | 2      |
+| `handbrew_pulls` | 1      |
+| `auth.users`     | 3 (alle Google-Login) → werden die Einträge der D1-Tabelle `users` |
+
+**Schema-Abweichungen gegenüber den TypeScript-Models:**
+
+- `espressos.output` (bigint, nullable) existiert in der DB, aber nicht im Model; 1 Zeile hat einen Wert →
+  Spalte in D1 übernehmen, damit nichts verloren geht.
+- `espressos.vendor` ist nullable (aktuell keine NULLs), `handbrews.vendor` NOT NULL.
+- `handbrews` hat **kein** `created_at`; in D1 mit Default ergänzt (Altdaten bekommen den Importzeitpunkt).
+- Defaults: `espressos.gramms = 18`, `ratio = 2`, `runtime = 25` → in D1 übernehmen.
+- IDs sind Identity-Spalten; Werte werden beim Import beibehalten.
+- `espresso_pulls.espresso_id` ist nullable (keine verwaisten Zeilen) → in D1 `NOT NULL`.
+
+**Auffälligkeiten (werden durch die Migration behoben):**
+
+- **`espresso_pulls` ist öffentlich lesbar**: Die Read-Policy gilt für alle Rollen inkl. `anon`; mit dem anon key
+  aus dem Repo kann jeder die Pulls lesen. Bis zur Abschaltung ggf. auf `authenticated` einschränken.
+- **Espresso löschen funktioniert heute nicht**: `espressos` hat keine DELETE-Policy, und
+  `espresso_pulls.espresso_id` hat kein `ON DELETE CASCADE`. `delete()` liefert still ein leeres Ergebnis.
+  In D1 mit `ON DELETE CASCADE` (wie bei `handbrew_pulls`) – Löschen eines Espresso entfernt dann auch seine Pulls.
+- `espresso_pulls` hat keine UPDATE/DELETE-Policy (die App nutzt das aktuell auch nicht).
 
 ## 4. Phasen
 
@@ -115,11 +147,12 @@ CREATE TABLE users (
 CREATE TABLE espressos (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT    NOT NULL,
-  vendor          TEXT    NOT NULL DEFAULT '',
-  gramms          REAL,
-  ratio           REAL,
-  grinder_setting REAL,
-  runtime         REAL,
+  vendor          TEXT,
+  gramms          REAL    NOT NULL DEFAULT 18,
+  ratio           REAL    NOT NULL DEFAULT 2,
+  grinder_setting REAL    NOT NULL,
+  runtime         REAL    NOT NULL DEFAULT 25,
+  output          REAL,                                 -- existiert in Supabase, (noch) nicht im Model
   archived        INTEGER NOT NULL DEFAULT 0,          -- boolean 0/1
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -128,7 +161,7 @@ CREATE TABLE espresso_pulls (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   espresso_id     INTEGER NOT NULL REFERENCES espressos(id) ON DELETE CASCADE,
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  runtime         REAL,
+  runtime         REAL    NOT NULL,
   output          REAL,
   grinder_setting REAL,
   gramms          REAL
@@ -138,7 +171,7 @@ CREATE INDEX idx_espresso_pulls_espresso ON espresso_pulls(espresso_id, created_
 CREATE TABLE handbrews (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   name       TEXT    NOT NULL,
-  vendor     TEXT    NOT NULL DEFAULT '',
+  vendor     TEXT    NOT NULL,
   archived   INTEGER NOT NULL DEFAULT 0,
   created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -148,11 +181,11 @@ CREATE TABLE handbrew_pulls (
   handbrew_id     INTEGER NOT NULL REFERENCES handbrews(id) ON DELETE CASCADE,
   created_at      TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   recipe_key      TEXT    NOT NULL CHECK (recipe_key IN ('recipe_1','recipe_2')),
-  grinder_setting REAL,
-  beans_g         REAL,
-  infusions       INTEGER,
-  infusion_ml     REAL,
-  output_ml       REAL
+  grinder_setting REAL    NOT NULL,
+  beans_g         REAL    NOT NULL,
+  infusions       INTEGER NOT NULL,
+  infusion_ml     REAL    NOT NULL,
+  output_ml       REAL    NOT NULL
 );
 CREATE INDEX idx_handbrew_pulls_handbrew ON handbrew_pulls(handbrew_id, created_at);
 ```
@@ -168,7 +201,12 @@ Hinweise zu SQLite/D1:
 - Foreign Keys sind in D1 aktiv → `ON DELETE CASCADE` greift.
 - Timestamps als ISO-8601-Text → Angulars `date`-Pipe funktioniert weiterhin.
 
-### Phase 2 – Datenmigration (≈ 1 h)
+### Phase 2 – Datenmigration (≈ 0,5 h)
+
+Bei 18 Zeilen gibt es zwei Wege. **Empfohlen (einfach):** die `INSERT`-Statements direkt in Supabase per SQL
+erzeugen lassen (SQL-Editor oder Supabase-MCP), z. B.
+`SELECT format('INSERT INTO espressos (id,name,…) VALUES (%s,%L,…);', id, name, …) FROM espressos ORDER BY id;`
+und das Ergebnis als `supabase-data.sql` speichern. Alternativ der klassische Weg:
 
 1. Daten aus Supabase exportieren (nur Daten, IDs beibehalten):
    ```bash
