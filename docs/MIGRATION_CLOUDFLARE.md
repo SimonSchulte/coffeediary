@@ -1,24 +1,25 @@
-# Migrationsplan: Coffeediary → Cloudflare
+# Migrationsplan: Coffeediary → Cloudflare (+ Android-App)
 
-Ziel: Coffeediary vollständig auf den eigenen Cloudflare-Account umziehen und **Supabase** (Datenbank + Auth)
-sowie **GitHub Pages** (Hosting) ablösen.
+Ziel: Coffeediary vollständig auf den eigenen Cloudflare-Account umziehen, **Supabase** (Datenbank + Auth)
+und **GitHub Pages** (Hosting) ablösen und dabei die Basis für eine **Android-App (Capacitor)** mit Fotos und
+einer Café-Sammlung legen.
 
 ## 1. Ausgangslage (Ist-Zustand)
 
-| Bereich         | Heute                                                                                   |
-| --------------- | --------------------------------------------------------------------------------------- |
-| Hosting         | GitHub Pages via `angular-cli-ghpages` (`ng deploy`), Base-Path `/coffeediary/`         |
-| Datenbank       | Supabase Postgres, Tabellen `espressos`, `espresso_pulls`, `handbrews`, `handbrew_pulls` |
-| Datenzugriff    | direkt aus dem Browser per `@supabase/supabase-js` (anon key, Schutz nur über RLS)       |
-| Auth            | Supabase Auth mit Google OAuth (`supabase-auth.service.ts`)                              |
-| Konfiguration   | URL + anon key **hart codiert** in 3 Dateien                                            |
+| Bereich       | Heute                                                                                    |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| Hosting       | GitHub Pages via `angular-cli-ghpages` (`ng deploy`), Base-Path `/coffeediary/`          |
+| Datenbank     | Supabase Postgres, Tabellen `espressos`, `espresso_pulls`, `handbrews`, `handbrew_pulls` |
+| Datenzugriff  | direkt aus dem Browser per `@supabase/supabase-js` (anon key, Schutz nur über RLS)        |
+| Auth          | Google-Login über **Supabase Auth** (OAuth-Redirect, Session-Verwaltung durch Supabase)   |
+| Konfiguration | URL + anon key **hart codiert** in 3 Dateien                                             |
 
 Betroffene Dateien:
 
 - `src/app/backend/supabase.espressos.service.ts`
 - `src/app/backend/supabase.handbrews.service.ts`
 - `src/app/services/supabase-auth.service.ts` (genutzt von `app.ts` und `ui/app-toolbar.component.ts`)
-- `src/index.html` (lädt `accounts.google.com/gsi/client`, wird nicht verwendet)
+- `src/index.html` (lädt bereits `accounts.google.com/gsi/client` – wird künftig tatsächlich genutzt)
 - `angular.json` (`deploy`-Target), `package.json` (`angular-cli-ghpages`, `@supabase/supabase-js`)
 - `.mcp.json` (Supabase-MCP)
 
@@ -28,63 +29,86 @@ Für Coffeediary existieren noch keine Ressourcen.
 ## 2. Zielarchitektur
 
 ```
-Smartphone-Browser
-   │  https://coffeediary.<domain>   (oder coffeediary.<account>.workers.dev)
-   ▼
-Cloudflare Access  ── Google-Login, Allow-List per E-Mail
-   ▼
-Worker "coffeediary"
-   ├─ /api/*  → REST-API (TypeScript, prüft Access-JWT) ──► D1 "coffeediary"
-   └─ alles andere → Static Assets (Angular-Build, SPA-Fallback auf index.html)
+ Web (Browser)                         Android-App (Capacitor, gleiche Angular-Codebasis)
+ https://coffeediary.<domain>          WebView-Origin https://localhost
+   │  Google Identity Services            │  nativer Google-Login (Credential Manager)
+   │  Session-Cookie                      │  Bearer-Token
+   └──────────────┬───────────────────────┘
+                  ▼
+        Worker "coffeediary"  (https://coffeediary.<domain>)
+          ├─ /api/auth/*  → Google-ID-Token prüfen, Allow-List, Session ausstellen
+          ├─ /api/*       → REST-API (Session prüfen, CORS für die App)
+          │                   ├─► D1 "coffeediary"       (Daten)
+          │                   ├─► R2 "coffeediary-photos" (Fotos, Ausbaustufe 2)
+          │                   └─► Google Places API       (Cafés, Ausbaustufe 3, Key als Secret)
+          └─ alles andere → Static Assets (Angular-Build, SPA-Fallback)
 ```
 
-| Baustein   | Cloudflare-Produkt                                   | Ersetzt                    |
-| ---------- | ---------------------------------------------------- | -------------------------- |
-| Hosting    | **Workers Static Assets** (SPA-Modus)                | GitHub Pages               |
-| API        | **Worker** (`/api/*`, gleiche Origin → kein CORS)    | supabase-js / PostgREST    |
-| Datenbank  | **D1** (SQLite)                                      | Supabase Postgres          |
-| Auth       | **Cloudflare Access** (Zero Trust, Google als IdP)   | Supabase Auth              |
-| CI/CD      | **Workers Builds** (Git-Integration) o. GitHub Action | `ng deploy` / gh-pages     |
-| Backups    | D1 Time Travel + optionaler Export                   | Supabase Backups           |
+| Baustein   | Lösung                                                       | Ersetzt                  |
+| ---------- | ------------------------------------------------------------ | ------------------------ |
+| Hosting    | **Workers Static Assets** (SPA-Modus)                        | GitHub Pages             |
+| API        | **Worker** unter `/api/*`                                    | supabase-js / PostgREST  |
+| Datenbank  | **D1** (SQLite)                                              | Supabase Postgres        |
+| Auth       | **Google-Login, im Worker verifiziert** + eigene Session     | Supabase Auth            |
+| Dateien    | **R2** (später)                                              | –                        |
+| Android    | **Capacitor** (später)                                       | –                        |
+| CI/CD      | **Workers Builds** (Git-Integration); APK per GitHub Action  | `ng deploy` / gh-pages   |
+| Backups    | D1 Time Travel + optionaler Export                           | Supabase Backups         |
 
 ### Warum diese Entscheidungen
 
-- **Workers statt Pages**: Cloudflare führt Pages in Workers zusammen; ein einziger Worker liefert Frontend
-  *und* API aus, eine Deployment-Einheit, keine CORS-Konfiguration.
-- **D1**: Datenmodell ist klein und relational (2 × Kopf/Positionen), passt 1:1 auf SQLite. Free Tier reicht
-  bei Weitem. Hyperdrive + externes Postgres wäre nur nötig, wenn man Postgres behalten möchte.
-- **Cloudflare Access statt eigener Auth**: Die App ist persönlich, Nutzer werden laut README manuell
-  freigeschaltet („shoot me an email“). Genau das ist eine Access-Allow-List. Free bis 50 Nutzer, Google-Login,
-  kein eigener OAuth-Code, kein Token-Handling im Angular-Code. Der Worker verifiziert nur das
-  `Cf-Access-Jwt-Assertion`-Header-JWT.
-  *Alternative*: eigener Google-OIDC-Flow im Worker (Muster wie `hiorg-oidc-bridge`) – mehr Code, nur sinnvoll,
-  falls später Self-Signup gewünscht ist.
+- **Workers statt Pages**: Cloudflare führt Pages in Workers zusammen; ein Worker liefert Frontend *und* API
+  aus – eine Deployment-Einheit.
+- **D1**: kleines, relationales Datenmodell (Kopf/Positionen), passt 1:1 auf SQLite; Free Tier reicht.
+- **Eigener Google-Login statt Cloudflare Access**: Die Android-App liefert ihr Frontend lokal aus und ruft die
+  API von einer fremden Origin auf – ein vorgeschalteter Access-Login passt dazu nicht. Der bestehende
+  **Google-OAuth-Client** (Google Cloud Console) wird weiterverwendet; nur die Prüfung des Logins wandert von
+  Supabase in den Worker. Für Nutzer sieht der Login praktisch gleich aus.
+- **Capacitor statt nativer Neuentwicklung**: Der Angular-Code (Material, Signals, Komponenten) bleibt;
+  Kamera, Standort, Teilen-Ziel usw. kommen als Plugins. Native Spezialfälle (Widget, Hintergrund-Standort)
+  lassen sich später als einzelnes Plugin nachrüsten.
 
 ## 3. Offene Punkte vor dem Start
 
-1. **Schema in Supabase verifizieren** (Spaltentypen, Defaults, `ON DELETE`-Verhalten, evtl. vorhandene
-   `user_id`-Spalten und RLS-Policies). Die Supabase-MCP-Verbindung war bei der Planerstellung nicht
-   erreichbar – im Supabase Dashboard unter *Database → Tables* bzw. per `pg_dump --schema-only` prüfen.
-2. **Mandantenfähigkeit**: Die Models enthalten kein `user_id`. Falls alle freigeschalteten Nutzer dieselben
-   Daten sehen (gemeinsames Tagebuch), bleibt das so. Falls RLS pro Nutzer trennt, bekommt jede Tabelle eine
-   Spalte `owner_email` (aus dem Access-JWT befüllt) – siehe Schritt 4.
-3. **Domain**: eigene Domain/Subdomain in Cloudflare oder `*.workers.dev`. Access funktioniert mit beiden.
+1. **Supabase-Schema verifizieren** (Spaltentypen, Defaults, `ON DELETE`-Verhalten, evtl. `user_id`-Spalten,
+   RLS-Policies) – im Supabase Dashboard oder per `pg_dump --schema-only`. Die Supabase-MCP-Verbindung war bei
+   der Planerstellung nicht erreichbar.
+2. **Gemeinsame oder getrennte Daten?** Die Models enthalten kein `user_id`. Teilen sich alle freigeschalteten
+   Nutzer ein Tagebuch, bleibt das so. Sollen Daten pro Nutzer getrennt sein, bekommen die Kopf-Tabellen eine
+   Spalte `owner_email` (siehe Phase 1). Spätestens bei Cafés/Fotos sollte das entschieden sein.
+3. **Domain**: eigene (Sub-)Domain in Cloudflare empfohlen (stabile API-URL für die App), sonst `*.workers.dev`.
+4. **Google-OAuth-Client-ID** aus der Google Cloud Console heraussuchen (ist heute im Supabase-Dashboard unter
+   *Authentication → Providers → Google* hinterlegt).
 
-## 4. Umsetzung in Phasen
+## 4. Phasen
+
+Teil A ist die eigentliche Migration (Web-App läuft danach komplett auf Cloudflare). Teil B sind die
+Ausbaustufen; jede liefert eine lauffähige App.
+
+---
+
+## Teil A – Migration
 
 ### Phase 0 – Vorbereitung (≈ 0,5 h)
 
 - [ ] Branch für die Migration anlegen.
-- [ ] `wrangler` als devDependency installieren: `npm i -D wrangler @cloudflare/workers-types jose`.
+- [ ] `npm i -D wrangler @cloudflare/workers-types` und `npm i jose` (JWT-Prüfung im Worker).
 - [ ] `npx wrangler login`.
 - [ ] Vollständigen Supabase-Export ziehen und sicher ablegen (Sicherheitsnetz, siehe Phase 2).
 
 ### Phase 1 – D1-Datenbank & Schema (≈ 1 h)
 
 - [ ] `npx wrangler d1 create coffeediary`
-- [ ] Migration `migrations/0001_init.sql` anlegen (Entwurf, gegen Supabase-Schema abgleichen):
+- [ ] Migration `migrations/0001_init.sql` (Entwurf, gegen Supabase-Schema abgleichen):
 
 ```sql
+-- Freigeschaltete Nutzer (ersetzt die Nutzerverwaltung von Supabase Auth)
+CREATE TABLE users (
+  email      TEXT PRIMARY KEY,
+  name       TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE TABLE espressos (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT    NOT NULL,
@@ -130,20 +154,20 @@ CREATE TABLE handbrew_pulls (
 CREATE INDEX idx_handbrew_pulls_handbrew ON handbrew_pulls(handbrew_id, created_at);
 ```
 
-  Falls Daten pro Nutzer getrennt werden müssen: `owner_email TEXT NOT NULL` in `espressos` und `handbrews`
-  ergänzen und in jeder Query filtern.
+  Bei getrennten Daten pro Nutzer: `owner_email TEXT NOT NULL REFERENCES users(email)` in `espressos` und
+  `handbrews` ergänzen und in jeder Query filtern.
 
 - [ ] Lokal anwenden: `npx wrangler d1 migrations apply coffeediary --local`
+- [ ] Freigeschaltete Nutzer eintragen: `INSERT INTO users (email, name) VALUES (…)`.
 
 Hinweise zu SQLite/D1:
-- Boolean → `INTEGER` 0/1; der Worker mappt zurück auf `true/false`, damit die Angular-Models unverändert
-  bleiben.
-- Foreign Keys sind in D1 standardmäßig aktiv → `ON DELETE CASCADE` greift.
+- Boolean → `INTEGER` 0/1; der Worker mappt auf `true/false`, die Angular-Models bleiben unverändert.
+- Foreign Keys sind in D1 aktiv → `ON DELETE CASCADE` greift.
 - Timestamps als ISO-8601-Text → Angulars `date`-Pipe funktioniert weiterhin.
 
 ### Phase 2 – Datenmigration (≈ 1 h)
 
-1. Daten aus Supabase exportieren – je Tabelle **nur Daten**, IDs beibehalten:
+1. Daten aus Supabase exportieren (nur Daten, IDs beibehalten):
    ```bash
    pg_dump "<supabase-connection-string>" --data-only --column-inserts --no-owner \
      -t public.espressos -t public.espresso_pulls -t public.handbrews -t public.handbrew_pulls \
@@ -151,23 +175,21 @@ Hinweise zu SQLite/D1:
    ```
    (Alternativ CSV-Export im Supabase Table Editor + kleines Skript, das `INSERT`s erzeugt.)
 2. Dump für SQLite bereinigen: `SET …`-/`SELECT pg_catalog…`-Zeilen und `public.`-Präfixe entfernen,
-   `true/false` → `1/0`, Timestamps ggf. auf ISO-Format normalisieren. Reihenfolge: Kopf-Tabellen vor
-   Pull-Tabellen.
+   `true/false` → `1/0`, Timestamps auf ISO-Format normalisieren. Kopf-Tabellen vor Pull-Tabellen.
 3. Lokal testen: `npx wrangler d1 execute coffeediary --local --file=supabase-data.sql`
-4. Plausibilität prüfen: `SELECT COUNT(*)` je Tabelle mit Supabase vergleichen, Stichproben in der App.
-5. Erst in Phase 6 (Cutover) gegen `--remote` ausführen.
+4. `SELECT COUNT(*)` je Tabelle mit Supabase vergleichen, Stichproben in der App.
+5. Gegen `--remote` erst beim Cutover (Phase 6).
 
-`AUTOINCREMENT` setzt sich nach expliziten ID-Inserts automatisch hinter die höchste ID – kein manuelles
-Sequence-Reset nötig.
+`AUTOINCREMENT` setzt sich nach expliziten ID-Inserts automatisch hinter die höchste ID.
 
-### Phase 3 – Worker-API (≈ 3–4 h)
+### Phase 3 – Worker: Auth & API (≈ 4–5 h)
 
-Neue Struktur:
+Struktur:
 
 ```
 worker/
-  index.ts          # Router: /api/* → Handler, sonst env.ASSETS
-  auth.ts           # Access-JWT prüfen (jose + JWKS von <team>.cloudflareaccess.com)
+  index.ts          # Router, CORS, /api/* → Handler, sonst env.ASSETS
+  auth.ts           # Google-ID-Token prüfen, Session-JWT ausstellen/prüfen
   espressos.ts
   handbrews.ts
 migrations/
@@ -192,114 +214,225 @@ wrangler.jsonc
     { "binding": "DB", "database_name": "coffeediary", "database_id": "<aus wrangler d1 create>" }
   ],
   "vars": {
-    "ACCESS_TEAM_DOMAIN": "https://<team>.cloudflareaccess.com",
-    "ACCESS_AUD": "<Application Audience Tag>"
+    "GOOGLE_CLIENT_ID": "<Web-Client-ID>.apps.googleusercontent.com",
+    "ALLOWED_ORIGINS": "https://localhost,http://localhost:4200"
   }
+  // Secret: npx wrangler secret put SESSION_SECRET
 }
 ```
 
-Endpunkte (1:1 aus den bestehenden Service-Methoden abgeleitet):
+#### Login-Ablauf
 
-| Methode & Pfad                                | ersetzt                                   |
-| --------------------------------------------- | ----------------------------------------- |
-| `GET    /api/espressos?archived=0\|1`         | `getAll()` / `getArchived()` (inkl. Pulls) |
-| `GET    /api/espressos/:id`                   | `getById()`                               |
-| `POST   /api/espressos`                       | `create()`                                |
-| `PATCH  /api/espressos/:id`                   | `update()`, `updateDefaultRecipe()`, `setArchived()` |
-| `DELETE /api/espressos/:id`                   | `delete()`                                |
-| `GET    /api/espressos/:id/pulls`             | `getAllExtractions()`                     |
-| `POST   /api/espressos/:id/pulls`             | `createEspressoPull()`                    |
-| analog `/api/handbrews…`                      | `SupabaseHandbrewsService`                |
-| `GET    /api/me`                              | E-Mail/Name aus Access-JWT für die Toolbar |
+```
+Client (Web: Google Identity Services | App: natives Google-Plugin)
+  → erhält Google-ID-Token (JWT, aud = Web-Client-ID)
+  → POST /api/auth/google { idToken }
+Worker
+  1. jose.jwtVerify(idToken, createRemoteJWKSet('https://www.googleapis.com/oauth2/v3/certs'),
+       { issuer: ['https://accounts.google.com','accounts.google.com'], audience: GOOGLE_CLIENT_ID })
+  2. email_verified === true und E-Mail in Tabelle users → sonst 403
+  3. Session-JWT (HS256, SESSION_SECRET, 30 Tage, sub = E-Mail) ausstellen
+     - Web:  Set-Cookie: session=…; HttpOnly; Secure; SameSite=Lax; Path=/
+     - App:  { token } im Body → Ablage via @capacitor/preferences, Versand als Authorization: Bearer
+```
+
+- Jede `/api`-Anfrage (außer `/api/auth/google`) prüft Cookie **oder** Bearer-Token und, dass die E-Mail noch
+  in `users` steht → Nutzer entfernen = Zugriff sofort weg.
+- `POST /api/auth/logout` löscht das Cookie; die App verwirft ihr Token.
+- `GET /api/me` liefert E-Mail/Name/Bild für die Toolbar.
+- **CORS**: nur Origins aus `ALLOWED_ORIGINS` (Capacitor-Android nutzt `https://localhost`), Header
+  `Authorization, Content-Type`, Preflight (`OPTIONS`) beantworten. Kein `credentials: include` nötig, da die
+  App Bearer-Tokens nutzt.
+
+#### Endpunkte (aus den bestehenden Service-Methoden abgeleitet)
+
+| Methode & Pfad                         | ersetzt                                                 |
+| -------------------------------------- | ------------------------------------------------------- |
+| `POST   /api/auth/google`              | `signInWithGoogle()`                                    |
+| `POST   /api/auth/logout`              | `signOut()`                                             |
+| `GET    /api/me`                       | `user$` / `getUser()`                                   |
+| `GET    /api/espressos?archived=0\|1`  | `getAll()` / `getArchived()` (inkl. Pulls)              |
+| `GET    /api/espressos/:id`            | `getById()`                                             |
+| `POST   /api/espressos`                | `create()`                                              |
+| `PATCH  /api/espressos/:id`            | `update()`, `updateDefaultRecipe()`, `setArchived()`    |
+| `DELETE /api/espressos/:id`            | `delete()`                                              |
+| `GET    /api/espressos/:id/pulls`      | `getAllExtractions()`                                   |
+| `POST   /api/espressos/:id/pulls`      | `createEspressoPull()`                                  |
+| analog `/api/handbrews…`               | `SupabaseHandbrewsService`                              |
 
 Umsetzungsdetails:
-- **Nested Pulls**: zwei Queries (Köpfe, dann alle Pulls `WHERE espresso_id IN (…)`) per `env.DB.batch()` und
-  im Worker gruppieren – liefert exakt die heutige Form `{…, espresso_pulls: [...]}`.
-- **Whitelist für Spalten** bei `POST`/`PATCH` (kein blindes Durchreichen von Request-Feldern in SQL),
-  ausschließlich Prepared Statements mit `.bind()`.
-- **Auth-Check** als erstes in jedem `/api`-Request: JWT aus `Cf-Access-Jwt-Assertion` mit `jose`
-  (`createRemoteJWKSet` + `jwtVerify`, `audience = ACCESS_AUD`) prüfen, sonst `401`. Schützt auch dann, wenn
-  die Access-Policy einmal falsch konfiguriert ist.
-- `POST`/`PATCH`/`DELETE` geben wie bisher das betroffene Objekt als Array zurück (`RETURNING *`), damit die
-  Komponenten unverändert bleiben.
+- **Nested Pulls**: Köpfe und zugehörige Pulls per `env.DB.batch()` laden und im Worker gruppieren → exakt die
+  heutige Form `{…, espresso_pulls: [...]}`.
+- **Spalten-Whitelist** bei `POST`/`PATCH`, ausschließlich Prepared Statements mit `.bind()`.
+- `POST`/`PATCH`/`DELETE` liefern wie bisher das Objekt als Array (`RETURNING *`).
+- Lokale Entwicklung: `.dev.vars` mit `SESSION_SECRET` (nicht committen, in `.gitignore`).
 
-### Phase 4 – Angular umbauen (≈ 2–3 h)
+### Phase 4 – Angular umbauen (≈ 3 h)
 
-- [ ] `provideHttpClient(withFetch())` in `app.config.ts`.
-- [ ] `src/app/backend/espressos.api.ts` und `handbrews.api.ts` als Ersatz der Supabase-Services –
-  **gleiche öffentlichen Methodensignaturen** (async/Promise, z. B. via `firstValueFrom(http.get…)`), dann
-  ändern sich in den Komponenten nur die Imports/Klassennamen.
+- [ ] `provideHttpClient(withFetch(), withInterceptors([authInterceptor]))` in `app.config.ts`.
+- [ ] **API-Basis-URL** als InjectionToken: Web → `/api` (relativ), App → `https://coffeediary.<domain>/api`
+  (Erkennung später über `Capacitor.isNativePlatform()`; bis dahin fest `/api`).
+- [ ] `authInterceptor`: setzt `Authorization: Bearer …`, falls ein Token vorhanden ist (nur App); bei `401`
+  → Login-Screen.
+- [ ] `src/app/backend/espressos.api.ts` und `handbrews.api.ts` ersetzen die Supabase-Services – **gleiche
+  öffentliche Methodensignaturen** (Promise via `firstValueFrom`), damit sich in den Komponenten nur
+  Imports/Klassennamen ändern.
 - [ ] `supabase-auth.service.ts` → `auth.service.ts`:
-  - `user` als Signal, befüllt über `GET /api/me`.
-  - `isLoggedIn` = `/api/me` liefert 200. Den Login-Screen in `app.ts` braucht es praktisch nicht mehr, weil
-    Access vor der App sitzt; als Fallback bleibt ein Button, der die Seite neu lädt.
-  - `signOut()` → `window.location.href = '/cdn-cgi/access/logout'`.
-- [ ] `<script src="https://accounts.google.com/gsi/client">` aus `index.html` entfernen.
-- [ ] `/coffeediary`-Base-Path-Logik entfällt (App läuft an der Domain-Wurzel, `<base href="/">` passt bereits).
-- [ ] `@supabase/supabase-js` und `angular-cli-ghpages` deinstallieren, `deploy`-Target aus `angular.json`
-  entfernen, Supabase-Eintrag aus `.mcp.json` entfernen.
-- [ ] Lokale Entwicklung: `proxy.conf.json` (`/api` → `http://localhost:8787`) in `angular.json` → `serve`
-  eintragen; parallel `npx wrangler dev` (lokale D1). Im Dev-Modus prüft der Worker das JWT nicht, sondern nutzt
-  eine feste Dev-E-Mail (nur wenn `env.DEV === "true"`, gesetzt in `.dev.vars`).
-- [ ] npm-Scripts ergänzen:
+  - `user` als Signal (aus `GET /api/me`), `loggedIn` als `computed`.
+  - Web-Login: „Sign in with Google“-Button von Google Identity Services (Script ist in `index.html` schon
+    eingebunden) → ID-Token an `/api/auth/google`.
+  - `signOut()` → `POST /api/auth/logout`.
+  - Die Plattform-Weiche (Web vs. natives Plugin) so kapseln, dass Phase 7 nur eine weitere Implementierung
+    ergänzt.
+- [ ] `/coffeediary`-Base-Path-Logik entfernen (App läuft an der Domain-Wurzel; `<base href="/">` passt).
+- [ ] `@supabase/supabase-js` und `angular-cli-ghpages` deinstallieren, `deploy`-Target aus `angular.json`,
+  Supabase-Eintrag aus `.mcp.json` entfernen.
+- [ ] Dev-Setup: `proxy.conf.json` (`/api` → `http://localhost:8787`) im `serve`-Target, parallel
+  `npx wrangler dev`.
+- [ ] npm-Scripts:
   ```json
   "dev:api": "wrangler dev",
   "deploy": "ng build && wrangler deploy",
   "db:migrate": "wrangler d1 migrations apply coffeediary --remote"
   ```
-- [ ] Tests (`npm test`) anpassen: Services mit `provideHttpClientTesting()` mocken.
+- [ ] Tests (`npm test`): Services mit `provideHttpClientTesting()` mocken.
 
-### Phase 5 – Cloudflare Access & Deployment (≈ 1 h)
+### Phase 5 – Google-Client & Deployment (≈ 1 h)
 
-1. Zero Trust Dashboard → *Settings → Authentication* → **Google** als Login-Methode hinzufügen
-   (Google-Cloud-OAuth-Client; der bisherige aus Supabase kann wiederverwendet werden, Redirect-URI
-   `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback` ergänzen).
-2. *Access → Applications* → Self-hosted App für `coffeediary.<domain>` (bzw. workers.dev-Hostname anlegen
-   über *Worker → Settings → Domains → Cloudflare Access aktivieren*).
-   - Policy *Allow*: Include → Emails = Liste der freigeschalteten Nutzer.
-   - Session Duration großzügig (z. B. 1 Monat) – angenehm auf dem Smartphone.
-   - **Application Audience (AUD) Tag** kopieren → `ACCESS_AUD`.
-3. Erst-Deployment: `npm run db:migrate && npm run deploy`.
-4. CI/CD: Im Worker unter *Settings → Builds* das GitHub-Repo verbinden
-   (Build-Command `npm ci && npm run build`, Deploy-Command `npx wrangler deploy`), Branch `main`.
-   Preview-Deployments für PR-Branches optional aktivieren (ebenfalls durch Access schützen!).
-   Alternative: GitHub Action mit `cloudflare/wrangler-action` und API-Token als Repo-Secret.
+1. Google Cloud Console → *APIs & Services → Credentials* → bestehenden **Web-OAuth-Client**:
+   - *Authorized JavaScript origins*: `https://coffeediary.<domain>` und `http://localhost:4200` ergänzen.
+   - Client-ID → `GOOGLE_CLIENT_ID`. (Kein Client-Secret nötig – der ID-Token-Flow kommt ohne aus.)
+2. `npx wrangler secret put SESSION_SECRET` (zufällig, ≥ 32 Byte).
+3. Custom Domain am Worker hinterlegen (*Worker → Settings → Domains & Routes*).
+4. Erst-Deployment: `npm run db:migrate && npm run deploy`.
+5. CI/CD: Worker → *Settings → Builds* mit dem GitHub-Repo verbinden (Build `npm ci && npm run build`,
+   Deploy `npx wrangler deploy`, Branch `main`). Alternative: GitHub Action mit `cloudflare/wrangler-action`.
 
-### Phase 6 – Cutover (≈ 30 min)
+### Phase 6 – Cutover & Rückbau (≈ 30 min + Karenzzeit)
 
-1. In Supabase nichts mehr erfassen (kurzer „Freeze“).
-2. Frischen Daten-Export ziehen (Phase 2, Schritte 1–2).
-3. `npx wrangler d1 execute coffeediary --remote --file=supabase-data.sql`
-4. Zeilenzahlen vergleichen, App auf dem Smartphone durchklicken: Liste, Archiv, neuer Pull, Edit, Archivieren,
-   Löschen – für Espresso und Handbrew.
-5. Auf dem Handy das neue Lesezeichen/Homescreen-Icon anlegen.
+1. In Supabase nichts mehr erfassen, frischen Export ziehen (Phase 2, Schritte 1–2).
+2. `npx wrangler d1 execute coffeediary --remote --file=supabase-data.sql`
+3. Zeilenzahlen vergleichen; auf dem Smartphone durchklicken: Login, Liste, Archiv, neuer Pull, Edit,
+   Archivieren, Löschen – für Espresso und Handbrew. Login mit nicht freigeschalteter Adresse → muss
+   abgelehnt werden.
+4. Neues Homescreen-Lesezeichen anlegen.
 
-### Phase 7 – Rückbau (nach 2–4 Wochen stabilem Betrieb)
+Nach 2–4 Wochen stabilem Betrieb:
+- [ ] GitHub Pages deaktivieren, Branch `gh-pages` löschen (optional vorher eine Redirect-`index.html`).
+- [ ] Supabase-Projekt erst pausieren, letzten Export archivieren, dann löschen – damit ist auch der anon key
+  in der Git-Historie wertlos.
+- [ ] Im Google-OAuth-Client die Supabase-Redirect-URI und die GitHub-Pages-Origin entfernen.
+- [ ] `CLAUDE.md` und `README.md` aktualisieren.
 
-- [ ] GitHub Pages deaktivieren (*Repo → Settings → Pages*), Branch `gh-pages` löschen.
-- [ ] Optional: auf der alten Pages-URL eine `index.html` mit Redirect auf die neue Domain belassen, statt
-  sofort abzuschalten.
-- [ ] Supabase-Projekt erst **pausieren**, nach Ablauf der Karenzzeit letzten Export archivieren und Projekt
-  **löschen**. Damit ist auch der in der Git-Historie liegende anon key wertlos.
-- [ ] Google-OAuth-Client: Supabase-Redirect-URI entfernen.
-- [ ] `CLAUDE.md` und `README.md` aktualisieren (Architektur, Commands, keine Supabase-Hinweise mehr).
+---
+
+## Teil B – Ausbaustufen
+
+### Phase 7 – Android-App mit Capacitor (≈ 1 Tag)
+
+- [ ] `npm i @capacitor/core @capacitor/android && npm i -D @capacitor/cli`
+- [ ] `npx cap init Coffeediary <app-id, z. B. de.<name>.coffeediary> --web-dir dist/coffeediary/browser`
+- [ ] `npx cap add android` → Ordner `android/` wird committet.
+- [ ] Login nativ: Google-Login-Plugin auf Basis des Android Credential Managers (z. B.
+  `@capgo/capacitor-social-login`; zum Zeitpunkt der Umsetzung Pflegestand prüfen). Als `serverClientId` die
+  **Web-Client-ID** verwenden, damit das ID-Token dieselbe `aud` hat und der Worker unverändert bleibt.
+- [ ] Google Cloud Console: zusätzlichen **Android-OAuth-Client** mit Paketname + SHA-1 des Debug- und des
+  Release-Signierschlüssels anlegen.
+- [ ] Token-Ablage mit `@capacitor/preferences`; API-Basis-URL über `Capacitor.isNativePlatform()` umschalten.
+- [ ] Safe-Areas/Statusleiste (`@capacitor/status-bar`), Zurück-Taste (`@capacitor/app`), Splash-Screen/Icon.
+- [ ] Build: lokal mit Android Studio (`npx cap sync && npx cap open android`), später GitHub Action, die eine
+  signierte APK/AAB baut (Keystore als Repo-Secret).
+- [ ] Verteilung: APK direkt installieren oder Play Store (Developer-Konto, einmalig 25 $; interner Test-Track
+  reicht für einen kleinen Nutzerkreis).
+
+### Phase 8 – Fotos mit R2 (≈ 0,5–1 Tag)
+
+- [ ] `npx wrangler r2 bucket create coffeediary-photos`, Binding `PHOTOS` in `wrangler.jsonc`.
+- [ ] Migration `0002_photos.sql`:
+  ```sql
+  CREATE TABLE photos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    r2_key      TEXT NOT NULL UNIQUE,
+    entity_type TEXT NOT NULL,              -- 'espresso' | 'handbrew' | 'cafe_visit' …
+    entity_id   INTEGER NOT NULL,
+    created_by  TEXT NOT NULL REFERENCES users(email),
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );
+  CREATE INDEX idx_photos_entity ON photos(entity_type, entity_id);
+  ```
+- [ ] Endpunkte: `POST /api/photos` (Upload, Worker schreibt nach R2 + Zeile in `photos`),
+  `GET /api/photos/:id` (Auslieferung nur mit gültiger Session, `Cache-Control: private`),
+  `DELETE /api/photos/:id`.
+- [ ] Client: `@capacitor/camera` (App) bzw. `<input type="file" accept="image/*" capture>` (Web); vor dem
+  Upload auf ~1600 px Kantenlänge verkleinern und als JPEG/WebP komprimieren (spart Speicher und
+  mobile Daten).
+- [ ] Beim Löschen eines Espresso/Handbrews zugehörige Fotos in R2 mitlöschen.
+
+### Phase 9 – Cafés / Collector (≈ 1–2 Tage)
+
+- [ ] Migration `0003_cafes.sql`:
+  ```sql
+  CREATE TABLE cafes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    place_id   TEXT UNIQUE,                 -- Google Place ID (darf dauerhaft gespeichert werden)
+    name       TEXT NOT NULL,
+    address    TEXT,
+    lat        REAL,
+    lng        REAL,
+    notes      TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  );
+  CREATE TABLE cafe_visits (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    cafe_id    INTEGER NOT NULL REFERENCES cafes(id) ON DELETE CASCADE,
+    visited_at TEXT NOT NULL,
+    rating     INTEGER CHECK (rating BETWEEN 1 AND 5),
+    drink      TEXT,
+    notes      TEXT
+  );
+  ```
+  Optional: `espressos.cafe_id` / `handbrews.cafe_id` (wo die Bohnen gekauft wurden).
+- [ ] **Café-Suche** über die Google **Places API (New)**, ausschließlich aus dem Worker aufgerufen
+  (`GOOGLE_PLACES_KEY` als Secret, Feldmasken sparsam halten → geringe Kosten):
+  `GET /api/places/search?q=…&lat=…&lng=…`.
+- [ ] **Maps-Link** aus `place_id` erzeugen (öffnet auf Android direkt die Maps-App):
+  `https://www.google.com/maps/search/?api=1&query=<name>&query_place_id=<place_id>`
+- [ ] **„In der Nähe“**: `@capacitor/geolocation` → Suche mit Standort-Bias.
+- [ ] **Teilen aus Google Maps → Coffeediary**: Android-Intent-Filter für `text/plain` (Share-Target-Plugin);
+  der geteilte `maps.app.goo.gl`-Link wird im Worker aufgelöst und per Places-Suche dem Café zugeordnet.
+  (Die Web-Version kann das über `share_target` im Web-App-Manifest ebenfalls.)
+- [ ] **Karte** aller besuchten Cafés: `@capacitor/google-maps` (nativ, App) bzw. Maps JavaScript API (Web).
+- [ ] Hinweis Google-Nutzungsbedingungen: `place_id` darf dauerhaft gespeichert werden; weitere
+  Places-Inhalte (Öffnungszeiten, Bewertungen …) bei Bedarf live abrufen statt dauerhaft zu speichern.
+  Name/Adresse/Notizen, die du selbst bestätigst, sind deine eigenen Daten.
+
+---
 
 ## 5. Risiken & Gegenmaßnahmen
 
-| Risiko                                               | Gegenmaßnahme                                                          |
-| ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| Typ-/Format-Unterschiede Postgres → SQLite           | Schema vorab verifizieren, lokaler Import-Testlauf, Count-Vergleich    |
-| Access-Policy falsch → App offen                     | Worker prüft JWT zusätzlich selbst; nach Deploy im Inkognito-Tab testen |
-| Datenverlust                                         | Supabase-Dump archivieren, Supabase erst nach Karenzzeit löschen, D1 Time Travel |
-| Access-Login auf iOS-Homescreen-Web-App              | lange Session Duration; ggf. als normales Browser-Lesezeichen nutzen   |
-| Rollback nötig                                       | GitHub-Pages-Deployment + Supabase bleiben bis Phase 7 unverändert lauffähig |
+| Risiko                                           | Gegenmaßnahme                                                              |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| Typ-/Format-Unterschiede Postgres → SQLite       | Schema vorab verifizieren, lokaler Import-Testlauf, Count-Vergleich        |
+| Fehler in der eigenen Auth-Prüfung               | `jose` statt Eigenbau, `aud`/`iss`/`email_verified` prüfen, Allow-List in D1, Negativtest beim Cutover |
+| Session-Token in der App abgegriffen             | nur HTTPS, begrenzte Laufzeit, Nutzer aus `users` entfernen sperrt sofort  |
+| CORS zu offen                                    | feste Origin-Liste statt `*`                                               |
+| Datenverlust                                     | Supabase-Dump archivieren, Supabase erst nach Karenzzeit löschen, D1 Time Travel |
+| Rollback nötig                                   | GitHub Pages + Supabase bleiben bis Ende Phase 6 unverändert lauffähig     |
+| Places-API-Kosten                                | nur über Worker, enge Feldmasken, Budget-Alarm in der Google Cloud         |
 
 ## 6. Kosten
 
-Alles im Cloudflare Free Tier: Workers (100k Requests/Tag), D1 (5 GB, 5 Mio. Reads/Tag), Access (bis 50 Nutzer).
-Static-Asset-Requests sind kostenlos und zählen nicht gegen das Worker-Limit.
+- Cloudflare Free Tier: Workers (100k Requests/Tag), D1 (5 GB), R2 (10 GB Speicher, kein Egress-Entgelt).
+  Static-Asset-Requests sind kostenlos.
+- Google: Login kostenlos; Places API nutzungsbasiert mit monatlichem Freikontingent – für eine persönliche
+  Café-Sammlung praktisch kostenlos, Budget-Alarm trotzdem setzen.
+- Optional Play-Store-Konto: einmalig 25 $.
 
-## 7. Aufwand gesamt
+## 7. Aufwand
 
-ca. **1–1,5 Tage**, davon der größte Teil für Worker-API und Angular-Services. Die Komponenten selbst bleiben
-weitgehend unangetastet, weil die Service-Signaturen erhalten bleiben.
+| Teil                               | Aufwand        |
+| ---------------------------------- | -------------- |
+| A – Migration (Phasen 0–6)         | ca. 1,5 Tage   |
+| B – Android (Phase 7)              | ca. 1 Tag      |
+| B – Fotos (Phase 8)                | ca. 0,5–1 Tag  |
+| B – Cafés (Phase 9)                | ca. 1–2 Tage   |
