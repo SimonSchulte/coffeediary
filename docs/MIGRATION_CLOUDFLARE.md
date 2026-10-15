@@ -30,12 +30,12 @@ Für Coffeediary existieren noch keine Ressourcen.
 
 ```
  Web (Browser)                         Android-App (Capacitor, gleiche Angular-Codebasis)
- https://coffeediary.<domain>          WebView-Origin https://localhost
+ https://coffeediary.<sub>.workers.dev  WebView-Origin https://localhost
    │  Google Identity Services            │  nativer Google-Login (Credential Manager)
    │  Session-Cookie                      │  Bearer-Token
    └──────────────┬───────────────────────┘
                   ▼
-        Worker "coffeediary"  (https://coffeediary.<domain>)
+        Worker "coffeediary"  (https://coffeediary.<sub>.workers.dev)
           ├─ /api/auth/*  → Google-ID-Token prüfen, Allow-List, Session ausstellen
           ├─ /api/*       → REST-API (Session prüfen, CORS für die App)
           │                   ├─► D1 "coffeediary"       (Daten)
@@ -76,7 +76,10 @@ Für Coffeediary existieren noch keine Ressourcen.
 2. **Gemeinsame oder getrennte Daten?** Die Models enthalten kein `user_id`. Teilen sich alle freigeschalteten
    Nutzer ein Tagebuch, bleibt das so. Sollen Daten pro Nutzer getrennt sein, bekommen die Kopf-Tabellen eine
    Spalte `owner_email` (siehe Phase 1). Spätestens bei Cafés/Fotos sollte das entschieden sein.
-3. **Domain**: eigene (Sub-)Domain in Cloudflare empfohlen (stabile API-URL für die App), sonst `*.workers.dev`.
+3. ~~Domain~~ **entschieden**: Start auf `https://coffeediary.<sub>.workers.dev` (`<sub>` = workers.dev-Subdomain
+   des Accounts, siehe *Workers & Pages → Übersicht*). Eine eigene Domain kann später ergänzt werden – dann
+   API-Basis-URL der App, `ALLOWED_ORIGINS` und die *Authorized JavaScript origins* im Google-Client anpassen.
+   Deshalb die URL nirgends hart codieren, sondern zentral konfigurieren.
 4. **Google-OAuth-Client-ID** aus der Google Cloud Console heraussuchen (ist heute im Supabase-Dashboard unter
    *Authentication → Providers → Google* hinterlegt).
 
@@ -204,6 +207,7 @@ wrangler.jsonc
   "name": "coffeediary",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
+  "workers_dev": true,
   "assets": {
     "directory": "./dist/coffeediary/browser",
     "binding": "ASSETS",
@@ -270,7 +274,8 @@ Umsetzungsdetails:
 ### Phase 4 – Angular umbauen (≈ 3 h)
 
 - [ ] `provideHttpClient(withFetch(), withInterceptors([authInterceptor]))` in `app.config.ts`.
-- [ ] **API-Basis-URL** als InjectionToken: Web → `/api` (relativ), App → `https://coffeediary.<domain>/api`
+- [ ] **API-Basis-URL** als InjectionToken: Web → `/api` (relativ), App → `https://coffeediary.<sub>.workers.dev/api`
+  (zentral in einer Environment-Datei, damit ein späterer Domain-Wechsel nur eine Stelle betrifft)
   (Erkennung später über `Capacitor.isNativePlatform()`; bis dahin fest `/api`).
 - [ ] `authInterceptor`: setzt `Authorization: Bearer …`, falls ein Token vorhanden ist (nur App); bei `401`
   → Login-Screen.
@@ -300,10 +305,11 @@ Umsetzungsdetails:
 ### Phase 5 – Google-Client & Deployment (≈ 1 h)
 
 1. Google Cloud Console → *APIs & Services → Credentials* → bestehenden **Web-OAuth-Client**:
-   - *Authorized JavaScript origins*: `https://coffeediary.<domain>` und `http://localhost:4200` ergänzen.
+   - *Authorized JavaScript origins*: `https://coffeediary.<sub>.workers.dev` und `http://localhost:4200` ergänzen.
    - Client-ID → `GOOGLE_CLIENT_ID`. (Kein Client-Secret nötig – der ID-Token-Flow kommt ohne aus.)
 2. `npx wrangler secret put SESSION_SECRET` (zufällig, ≥ 32 Byte).
-3. Custom Domain am Worker hinterlegen (*Worker → Settings → Domains & Routes*).
+3. workers.dev-Route aktiv lassen (`"workers_dev": true` in `wrangler.jsonc`, Standard). Eine Custom Domain
+   kann später unter *Worker → Settings → Domains & Routes* ergänzt werden.
 4. Erst-Deployment: `npm run db:migrate && npm run deploy`.
 5. CI/CD: Worker → *Settings → Builds* mit dem GitHub-Repo verbinden (Build `npm ci && npm run build`,
    Deploy `npx wrangler deploy`, Branch `main`). Alternative: GitHub Action mit `cloudflare/wrangler-action`.
