@@ -8,7 +8,7 @@ import {MatButton} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 import {MatExpansionModule} from '@angular/material/expansion';
 
 @Component({
@@ -106,7 +106,7 @@ class NewEspressoDialog {
   protected espresso_timer: number | null = 25;
   protected espresso_grinder_setting: number | null = null;
 
-  constructor(protected supabaseEspressos: SupabaseEspressosService, protected snackBar: MatSnackBar) {
+  constructor(protected espressosApi: EspressosApi, protected snackBar: MatSnackBar) {
   }
 
   protected addEspresso(): void {
@@ -118,7 +118,7 @@ class NewEspressoDialog {
     ) {
       return;
     }
-    this.supabaseEspressos
+    this.espressosApi
       .create({
         name: this.espresso_name,
         vendor: this.espresso_vendor,

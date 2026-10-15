@@ -39,6 +39,9 @@ async function handleApi(request: Request, env: Env, pathname: string): Promise<
   const segments = pathname.split('/').filter(Boolean).slice(1); // ohne "api"
 
   if (segments[0] === 'auth') {
+    if (segments[1] === 'config' && request.method === 'GET') {
+      return json({googleClientId: env.GOOGLE_CLIENT_ID});
+    }
     if (request.method !== 'POST') throw new HttpError(405, 'Methode nicht erlaubt');
     if (segments[1] === 'google') return loginWithGoogle(request, env);
     if (segments[1] === 'logout') return logout();

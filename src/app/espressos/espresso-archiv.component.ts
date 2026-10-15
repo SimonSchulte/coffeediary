@@ -5,7 +5,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatButtonModule} from '@angular/material/button';
 
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 import {SnackBarService} from '../services/snack-bar.service';
 import {Espresso} from '../models/espresso';
 import {EspressoCardComponent} from './espresso-card.component';
@@ -135,7 +135,7 @@ export class EspressoArchivComponent implements OnInit {
   espressosList: Espresso[] = [];
   loading = true;
 
-  private espressos = inject(SupabaseEspressosService);
+  private espressos = inject(EspressosApi);
   private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(SnackBarService);
 

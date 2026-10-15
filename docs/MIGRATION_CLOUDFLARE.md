@@ -12,7 +12,7 @@ einer Café-Sammlung legen.
 | Phase 1 – D1 `coffeediary` + Schema | ✅ angelegt (WEUR), `migrations/0001_init.sql` angewendet und in `d1_migrations` vermerkt |
 | Phase 2 – Daten | ✅ Erstimport (6/9/2/1 Zeilen + 3 Nutzer), Zeilenzahlen geprüft. **Beim Cutover neu importieren** (vorher Tabellen leeren), falls in Supabase noch etwas erfasst wurde |
 | Phase 3 – Worker (`worker/`, `wrangler.jsonc`) | ✅ implementiert, lokal mit `wrangler dev` getestet (CRUD, Cascade, Constraints → 400, Auth/Allow-List, CORS, Origin-Check) – **noch nicht deployt** |
-| Phase 4 – Angular umbauen | ⏳ offen |
+| Phase 4 – Angular umbauen | ✅ `EspressosApi`/`HandbrewsApi` statt Supabase-Services, `AuthService` mit Google-Button (GIS), 401-Interceptor, Supabase-Paket + gh-pages entfernt, Dev-Proxy; Unit-Tests grün, lokal im Browser (Mobil-Viewport) gegen `wrangler dev` geprüft |
 | Phase 5 – `GOOGLE_CLIENT_ID` eintragen, `SESSION_SECRET` setzen, Deploy | ⏳ offen |
 
 Lokal entwickeln: `.dev.vars` mit `SESSION_SECRET=<≥32 Zeichen>` anlegen (optional `DEV_USER_EMAIL=<freigeschaltete

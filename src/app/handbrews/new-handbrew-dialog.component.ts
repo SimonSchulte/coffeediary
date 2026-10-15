@@ -4,7 +4,7 @@ import {MatButton} from '@angular/material/button';
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 import {SnackBarService} from '../services/snack-bar.service';
 
 @Component({
@@ -65,7 +65,7 @@ export default class NewHandbrewDialogComponent {
   protected name = '';
   protected vendor = '';
 
-  private readonly handbrews = inject(SupabaseHandbrewsService);
+  private readonly handbrews = inject(HandbrewsApi);
   private readonly snackBar = inject(SnackBarService);
 
   protected save(): void {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Coffeediary is a personal Angular 20 web app for logging espresso recipes and extractions ("pulls"). Data is persisted in Supabase. The app is deployed to GitHub Pages via `angular-cli-ghpages`.
+Coffeediary is a personal Angular 20 web app for logging espresso recipes and extractions ("pulls"). Data is persisted in Cloudflare D1 behind a Cloudflare Worker (`worker/`), which also serves the built Angular app (migration from Supabase/GitHub Pages in progress, see `docs/MIGRATION_CLOUDFLARE.md`).
 The App is primarily designed for use via Smartphones, therefore responseable design is mandatory.
 
 ## Commands
@@ -14,7 +14,10 @@ The App is primarily designed for use via Smartphones, therefore responseable de
 - `npm run watch` — development build in watch mode
 - `npm test` — run Karma/Jasmine tests
 - `npm test -- --include='**/foo.spec.ts'` — run a single spec file
-- `ng deploy` — deploy to GitHub Pages (uses `angular-cli-ghpages`)
+- `npm run dev:api` — run the Worker locally (`wrangler dev`, port 8787, local D1); `npm start` proxies `/api` to it via `proxy.conf.json`. Needs `.dev.vars` with `SESSION_SECRET` (optional `DEV_USER_EMAIL` to skip login)
+- `npm run deploy` — build Angular and `wrangler deploy`
+- `npm run db:migrate` — apply `migrations/*.sql` to the remote D1 database
+- `npm run typecheck:worker` — typecheck the Worker
 
 ## Architecture
 
@@ -24,8 +27,9 @@ Routing is in `src/app/app.routes.ts` and uses lazy `loadComponent` for feature 
 
 ### Layers
 
-- `src/app/backend/supabase.espressos.service.ts` — the only data-access layer. Wraps `@supabase/supabase-js` and exposes async CRUD over two tables: `espressos` (with a default recipe: `gramms`, `ratio`, `grinder_setting`, `runtime`) and `espresso_pulls` (individual extractions joined to an espresso via `espresso_id`). `getAll()` returns espressos with their nested `espresso_pulls`. The Supabase URL and anon key are currently **hard-coded** in this file — when touching it, keep that in mind rather than assuming env-based config.
-- `src/app/services/` — cross-cutting Angular services (`snack-bar.service.ts`, `supabase-auth.service.ts`).
+- `worker/` — Cloudflare Worker: `/api/*` REST API over D1 (`resources.ts`), Google login + sessions (`auth.ts`), everything else is served from `dist/coffeediary/browser` (SPA fallback). Config in `wrangler.jsonc`, schema in `migrations/`.
+- `src/app/backend/` — the only data-access layer in the app: `EspressosApi` / `HandbrewsApi` (HttpClient → `/api`, Promise-based), base URL via the `API_BASE_URL` token in `api.config.ts`. Responses keep the nested shape (`espresso_pulls`, `handbrew_pulls`).
+- `src/app/services/` — cross-cutting Angular services (`snack-bar.service.ts`, `auth.service.ts` – Google Identity Services login against the Worker, `auth.interceptor.ts`).
 - `src/app/espressos/` — feature components (`espressos.component`, `extraction-overview.component`, `new-espresso-dialog.component`, `new-extraction-dialog.component`). Dialogs are Angular Material `MatDialog`-based and pass an `espressoId` for extraction creation.
 - `src/app/ui/` — shared shell components (`app-toolbar`, `app-footer`).
 

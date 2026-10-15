@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -6,10 +6,7 @@ import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {RouterLink} from '@angular/router';
 
 import {MatMenuModule} from '@angular/material/menu';
-import { AsyncPipe } from '@angular/common';
-import {SupabaseAuthService} from '../services/supabase-auth.service';
-import {Observable} from 'rxjs';
-import {User} from '@supabase/supabase-js';
+import {AuthService} from '../services/auth.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -21,8 +18,7 @@ import {User} from '@supabase/supabase-js';
     MatSnackBarModule,
     RouterLink,
     MatMenuModule,
-    AsyncPipe
-],
+  ],
   template: `
     <mat-toolbar class="toolbar">
       <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Menü">
@@ -34,11 +30,11 @@ import {User} from '@supabase/supabase-js';
       </span>
       <span class="toolbar-spacer"></span>
       <span class="user-info">
-        @if (user$ | async; as user) {
-          <span class="user-name">{{ user.user_metadata?.['full_name'] || user.email }}</span>
+        @if (auth.user(); as user) {
+          <span class="user-name">{{ user.name || user.email }}</span>
           <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Benutzermenü">
-            @if (user.user_metadata?.['avatar_url']) {
-              <img class="user-avatar" [src]="user.user_metadata?.['avatar_url']" alt="Avatar" />
+            @if (user.picture) {
+              <img class="user-avatar" [src]="user.picture" alt="Avatar" referrerpolicy="no-referrer" />
             } @else {
               <mat-icon class="user-avatar">account_circle</mat-icon>
             }
@@ -131,11 +127,7 @@ export class AppToolbar {
     {path: '/handbrews/archiv', label: 'Handbrews · Archiv'},
   ];
 
-  user$: Observable<User | null>;
-
-  constructor(public auth: SupabaseAuthService) {
-    this.user$ = this.auth.user$;
-  }
+  protected readonly auth = inject(AuthService);
 
   logout() {
     this.auth.signOut();

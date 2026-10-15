@@ -4,7 +4,7 @@ import {MatButton} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 
 export interface EditHandbrewDialogData {
   id: number;
@@ -66,7 +66,7 @@ export default class EditHandbrewDialogComponent {
 
   readonly dialogRef = inject(MatDialogRef<EditHandbrewDialogComponent>);
   private readonly data = inject<EditHandbrewDialogData>(MAT_DIALOG_DATA);
-  private readonly handbrews = inject(SupabaseHandbrewsService);
+  private readonly handbrews = inject(HandbrewsApi);
 
   constructor() {
     this.name = this.data.name;

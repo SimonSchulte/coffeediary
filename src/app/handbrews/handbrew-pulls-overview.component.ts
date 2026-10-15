@@ -4,7 +4,7 @@ import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {MatCardModule} from '@angular/material/card';
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {MatButtonModule, MatIconButton} from '@angular/material/button';
@@ -149,7 +149,7 @@ export class HandbrewPullsOverviewComponent implements OnInit {
   @ViewChild(MatSort) sort!: MatSort;
 
   constructor(
-    private handbrews: SupabaseHandbrewsService,
+    private handbrews: HandbrewsApi,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
