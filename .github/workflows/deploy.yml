@@ -1,0 +1,81 @@
+name: Deploy to Cloudflare
+
+# Baut die Angular-App, wendet neue D1-Migrationen an und deployt den Worker (inkl. Static Assets).
+#
+# Benötigt in GitHub → Settings → Secrets and variables → Actions:
+#   Secrets:   CLOUDFLARE_API_TOKEN   (Token mit "Workers Scripts: Edit" + "D1: Edit")
+#              CLOUDFLARE_ACCOUNT_ID
+#              SESSION_SECRET         (zufällig, ≥ 32 Zeichen, z. B. `openssl rand -hex 32`)
+#   Variables: GOOGLE_CLIENT_ID       (Web-OAuth-Client-ID aus der Google Cloud Console)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check configuration
+        env:
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          HAS_SESSION_SECRET: ${{ secrets.SESSION_SECRET != '' }}
+        run: |
+          missing=()
+          [[ -n "$GOOGLE_CLIENT_ID" ]] || missing+=("Variable GOOGLE_CLIENT_ID")
+          [[ "$HAS_TOKEN" == "true" ]] || missing+=("Secret CLOUDFLARE_API_TOKEN")
+          [[ "$HAS_ACCOUNT" == "true" ]] || missing+=("Secret CLOUDFLARE_ACCOUNT_ID")
+          [[ "$HAS_SESSION_SECRET" == "true" ]] || missing+=("Secret SESSION_SECRET")
+          if (( ${#missing[@]} )); then
+            printf '::error::Fehlt: %s\n' "${missing[@]}"
+            exit 1
+          fi
+
+      - run: npm run typecheck:worker
+
+      - name: Build Angular
+        run: npm run build
+
+      - name: Unit tests
+        run: npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox
+
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 migrations apply coffeediary --remote
+
+      - name: Deploy Worker
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --var GOOGLE_CLIENT_ID:${{ vars.GOOGLE_CLIENT_ID }}
+          secrets: |
+            SESSION_SECRET
+        env:
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}

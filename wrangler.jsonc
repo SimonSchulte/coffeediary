@@ -19,9 +19,10 @@
     }
   ],
   "vars": {
-    // TODO: Web-Client-ID aus der Google Cloud Console eintragen (heute im Supabase-Dashboard hinterlegt)
+    // Wird beim Deploy per GitHub Actions aus der Repo-Variable GOOGLE_CLIENT_ID gesetzt (--var).
+    // Für lokales Testen des echten Logins hier oder in .dev.vars eintragen.
     "GOOGLE_CLIENT_ID": "REPLACE_ME.apps.googleusercontent.com",
     "ALLOWED_ORIGINS": "https://localhost,http://localhost:4200"
   }
-  // Secret: npx wrangler secret put SESSION_SECRET
+  // Secret SESSION_SECRET: kommt beim Deploy aus dem GitHub-Secret gleichen Namens
 }

@@ -13,7 +13,7 @@ einer Café-Sammlung legen.
 | Phase 2 – Daten | ✅ Erstimport (6/9/2/1 Zeilen + 3 Nutzer), Zeilenzahlen geprüft. **Beim Cutover neu importieren** (vorher Tabellen leeren), falls in Supabase noch etwas erfasst wurde |
 | Phase 3 – Worker (`worker/`, `wrangler.jsonc`) | ✅ implementiert, lokal mit `wrangler dev` getestet (CRUD, Cascade, Constraints → 400, Auth/Allow-List, CORS, Origin-Check) – **noch nicht deployt** |
 | Phase 4 – Angular umbauen | ✅ `EspressosApi`/`HandbrewsApi` statt Supabase-Services, `AuthService` mit Google-Button (GIS), 401-Interceptor, Supabase-Paket + gh-pages entfernt, Dev-Proxy; Unit-Tests grün, lokal im Browser (Mobil-Viewport) gegen `wrangler dev` geprüft |
-| Phase 5 – `GOOGLE_CLIENT_ID` eintragen, `SESSION_SECRET` setzen, Deploy | ⏳ offen |
+| Phase 5 – CI/CD | ✅ `.github/workflows/ci.yml` (PRs/Branches: Typecheck, Build, Tests, Worker-Dry-Run) und `deploy.yml` (Push auf `main`: D1-Migrationen + `wrangler deploy`). ⏳ Offen: Secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SESSION_SECRET` und Variable `GOOGLE_CLIENT_ID` im Repo hinterlegen, Google-Origin eintragen |
 
 Lokal entwickeln: `.dev.vars` mit `SESSION_SECRET=<≥32 Zeichen>` anlegen (optional `DEV_USER_EMAIL=<freigeschaltete
 Adresse>` zum Überspringen des Logins), `npx wrangler d1 migrations apply coffeediary --local`, `npm run build`,
