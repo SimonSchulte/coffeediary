@@ -33,10 +33,9 @@ Erstimport der Daten sind fertig. Hintergrund: [`MIGRATION_CLOUDFLARE.md`](MIGRA
 
 ## 4. Daten aktuell halten
 
-- [ ] Prüfen, ob seit dem Erstimport (15.10.2026) noch etwas in der alten App erfasst wurde. Das
-      Supabase-Projekt ist inzwischen wieder pausiert; zum Prüfen kurz wiederherstellen (oder Claude
-      Bescheid geben) und Zeilenzahlen vergleichen. Stand D1: 6 Espressi, 9 Pulls, 2 Handbrews, 1 Aufguss.
-- [ ] Falls ja: Daten neu nach D1 übernehmen (D1-Tabellen vorher leeren).
+- [x] Seit dem Erstimport (15.10.2026) keine neuen Daten in Supabase (Stand 31.10.2026). D1 ist aktuell:
+      6 Espressi, 9 Pulls, 2 Handbrews, 1 Aufguss, 3 Nutzer, Migration `0001_init.sql` vermerkt.
+- Nicht mehr in der alten App erfassen – sonst vor dem Merge Daten neu übernehmen.
 
 ## 5. Erst-Deploy & Test
 
