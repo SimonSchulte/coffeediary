@@ -4,7 +4,7 @@ import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginatorModule} from '@angular/material/paginator';
 import {MatSort, MatSortModule} from '@angular/material/sort';
 import {MatCardModule} from '@angular/material/card';
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 import {ActivatedRoute, Router} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {SnackBarService} from '../services/snack-bar.service';
@@ -154,7 +154,7 @@ export class ExtractionOverviewComponent implements OnInit {
   dataSource = new MatTableDataSource<EspressoPull>([]);
   @ViewChild(MatSort) sort!: MatSort;
 
-  constructor(private espressos: SupabaseEspressosService,
+  constructor(private espressos: EspressosApi,
               private route: ActivatedRoute,
               private router: Router,
               private cdr: ChangeDetectorRef,

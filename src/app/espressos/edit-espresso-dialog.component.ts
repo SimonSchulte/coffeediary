@@ -4,7 +4,7 @@ import {MatButton} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 
 export interface EditEspressoDialogData {
   id: number;
@@ -60,7 +60,7 @@ export default class EditEspressoDialogComponent {
 
   readonly dialogRef = inject(MatDialogRef<EditEspressoDialogComponent>);
   private readonly data = inject<EditEspressoDialogData>(MAT_DIALOG_DATA);
-  private readonly supabaseEspressos = inject(SupabaseEspressosService);
+  private readonly espressosApi = inject(EspressosApi);
 
   constructor() {
     this.name = this.data.name;
@@ -69,7 +69,7 @@ export default class EditEspressoDialogComponent {
 
   protected async save(): Promise<void> {
     if (!this.name.trim() || !this.vendor.trim()) return;
-    await this.supabaseEspressos.update(this.data.id, {name: this.name.trim(), vendor: this.vendor.trim()});
+    await this.espressosApi.update(this.data.id, {name: this.name.trim(), vendor: this.vendor.trim()});
     this.dialogRef.close(true);
   }
 }

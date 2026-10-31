@@ -6,7 +6,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatSelectModule} from '@angular/material/select';
 import {MatIconModule} from '@angular/material/icon';
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 import {SnackBarService} from '../services/snack-bar.service';
 import {HANDBREW_RECIPES, HandbrewRecipeDefinition} from '../models/handbrew';
 
@@ -143,7 +143,7 @@ export default class NewHandbrewPullDialogComponent {
 
   private readonly dialogRef = inject(MatDialogRef<NewHandbrewPullDialogComponent>);
   private readonly data = inject<NewHandbrewPullDialogData>(MAT_DIALOG_DATA);
-  private readonly handbrews = inject(SupabaseHandbrewsService);
+  private readonly handbrews = inject(HandbrewsApi);
   private readonly snackBar = inject(SnackBarService);
 
   onRecipeChange(recipe: HandbrewRecipeDefinition): void {

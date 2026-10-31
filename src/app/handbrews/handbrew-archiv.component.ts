@@ -5,7 +5,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatButtonModule} from '@angular/material/button';
 
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 import {SnackBarService} from '../services/snack-bar.service';
 import {Handbrew} from '../models/handbrew';
 import {HandbrewCardComponent} from './handbrew-card.component';
@@ -137,7 +137,7 @@ export class HandbrewArchivComponent implements OnInit {
   handbrewsList: Handbrew[] = [];
   loading = true;
 
-  private handbrews = inject(SupabaseHandbrewsService);
+  private handbrews = inject(HandbrewsApi);
   private cdr = inject(ChangeDetectorRef);
   private snackBar = inject(SnackBarService);
 

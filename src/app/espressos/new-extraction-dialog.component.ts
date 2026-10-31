@@ -5,7 +5,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatInputModule} from '@angular/material/input';
 import {MatIconModule} from '@angular/material/icon';
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 import {SnackBarService} from '../services/snack-bar.service';
 import {Espresso} from '../models/espresso';
 
@@ -150,7 +150,7 @@ export default class NewExtractionDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<NewExtractionDialogComponent, NewExtractionDialogResult>,
-    private supabaseEspressosService: SupabaseEspressosService,
+    private espressosApi: EspressosApi,
     private snackBarService: SnackBarService,
     @Inject(MAT_DIALOG_DATA) public data: NewExtractionDialogData
   ) {
@@ -174,7 +174,7 @@ export default class NewExtractionDialogComponent {
       return;
     }
     try {
-      await this.supabaseEspressosService.createEspressoPull({
+      await this.espressosApi.createEspressoPull({
         espresso_id: this.espressoId,
         runtime: this.runtime,
         output: this.output,

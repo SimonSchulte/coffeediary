@@ -10,7 +10,7 @@ import {MatDialog} from '@angular/material/dialog';
 import NewHandbrewDialogComponent from './new-handbrew-dialog.component';
 import NewHandbrewPullDialogComponent, {NewHandbrewPullDialogData} from './new-handbrew-pull-dialog.component';
 import EditHandbrewDialogComponent, {EditHandbrewDialogData} from './edit-handbrew-dialog.component';
-import {SupabaseHandbrewsService} from '../backend/supabase.handbrews.service';
+import {HandbrewsApi} from '../backend/handbrews.api';
 import {Handbrew} from '../models/handbrew';
 import {Router} from '@angular/router';
 import {HandbrewCardComponent} from './handbrew-card.component';
@@ -146,7 +146,7 @@ export class HandbrewsComponent implements OnInit {
 
   readonly dialog = inject(MatDialog);
   private snackBar = inject(SnackBarService);
-  private handbrews = inject(SupabaseHandbrewsService);
+  private handbrews = inject(HandbrewsApi);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 

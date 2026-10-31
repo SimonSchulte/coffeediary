@@ -10,7 +10,7 @@ import {MatDialog} from '@angular/material/dialog';
 import NewEspressoDialog from './new-espresso-dialog.component';
 import NewExtractionDialogComponent, {NewExtractionDialogData} from './new-extraction-dialog.component';
 import EditEspressoDialogComponent, {EditEspressoDialogData} from './edit-espresso-dialog.component';
-import {SupabaseEspressosService} from '../backend/supabase.espressos.service';
+import {EspressosApi} from '../backend/espressos.api';
 import {Espresso} from '../models/espresso';
 import {Router} from '@angular/router';
 import {EspressoCardComponent} from './espresso-card.component';
@@ -145,7 +145,7 @@ export class EspressosComponent implements OnInit {
 
   readonly dialog = inject(MatDialog);
   private snackBar = inject(SnackBarService);
-  private espressos = inject(SupabaseEspressosService);
+  private espressos = inject(EspressosApi);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
 
