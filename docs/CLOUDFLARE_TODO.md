@@ -40,8 +40,9 @@ Erstimport der Daten sind fertig. Hintergrund: [`MIGRATION_CLOUDFLARE.md`](MIGRA
 
 ## 5. Erst-Deploy & Test
 
-- [ ] *Actions → Deploy to Cloudflare → Run workflow* auf dem Branch dieses PRs starten
-      (der Konfigurations-Check sagt genau, was ggf. noch fehlt).
+- [ ] PR mergen → der Workflow **Deploy to Cloudflare** startet automatisch (der Konfigurations-Check sagt
+      genau, was ggf. noch fehlt; danach über *Actions → Deploy to Cloudflare → Run workflow* neu starten).
+      Unkritisch: Die alte App auf GitHub Pages kommt aus dem Branch `gh-pages` und läuft unverändert weiter.
 - [ ] App auf dem Smartphone öffnen und durchklicken:
   - [ ] Login mit Google (alle drei freigeschalteten Konten möglich)
   - [ ] Espresso-Liste, Archiv, neuer Bezug, Bearbeiten, Archivieren, Wiederherstellen
@@ -49,7 +50,7 @@ Erstimport der Daten sind fertig. Hintergrund: [`MIGRATION_CLOUDFLARE.md`](MIGRA
   - [ ] Espresso löschen (ging unter Supabase nicht, entfernt jetzt auch die Bezüge)
   - [ ] Login mit einem **nicht** freigeschalteten Google-Konto → muss abgelehnt werden
 - [ ] Homescreen-Lesezeichen auf die neue URL umstellen.
-- [ ] PR mergen → ab dann deployt jeder Push auf `main` automatisch.
+- Ab jetzt deployt jeder Push auf `main` automatisch.
 
 ## 6. Rückbau (nach 2–4 Wochen stabilem Betrieb)
 
